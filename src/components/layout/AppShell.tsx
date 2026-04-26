@@ -1,0 +1,23 @@
+import type { ReactNode } from "react";
+import type { AppState } from "../../App";
+import { Sidebar } from "./Sidebar";
+import { TopBar } from "./TopBar";
+
+type AppShellProps = {
+  state: AppState;
+  children: ReactNode;
+};
+
+export function AppShell({ state, children }: AppShellProps) {
+  return (
+    <div className="min-h-screen bg-canvas text-ink">
+      <TopBar state={state} />
+      <div className="flex min-h-[calc(100vh-4rem)]">
+        <Sidebar />
+        <main className="compact-scrollbar flex-1 overflow-auto">
+          <div className="mx-auto max-w-[1440px] space-y-5 px-6 py-5">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}

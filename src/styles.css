@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #1f2933;
+  background: #f7f3eb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 1180px;
+  min-height: 100vh;
+  background: #f7f3eb;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.compact-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.compact-scrollbar::-webkit-scrollbar-thumb {
+  background: #d5cbbd;
+  border-radius: 999px;
+}
