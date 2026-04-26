@@ -7,11 +7,6 @@ import type { Environment, Role } from "../../types";
 
 const environments: Environment[] = ["Development", "Staging", "Production"];
 
-const envDot: Record<Environment, string> = {
-  Development: "bg-emerald-500",
-  Staging: "bg-amber-400",
-  Production: "bg-red-400",
-};
 import { CommandPalette } from "../ui/CommandPalette";
 
 type TopBarProps = {
@@ -113,8 +108,7 @@ export function TopBar({ state }: TopBarProps) {
               <span className="block text-[11px] font-medium uppercase tracking-wide text-muted">
                 Environment
               </span>
-              <div className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${envDot[state.environment]}`} />
+              <div className="flex items-center gap-1">
                 <span className="text-sm font-medium text-ink">{state.environment}</span>
                 <ChevronDown size={12} className="text-muted" />
               </div>

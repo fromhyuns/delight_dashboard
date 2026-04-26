@@ -25,6 +25,7 @@ type SidebarProps = {
 
 type ExpandableSection = "Build" | "Test" | "Evaluate" | null;
 
+
 const navItemBase = "flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium transition";
 const navItemCollapsed = "flex h-9 w-full items-center justify-center rounded-md text-sm font-medium transition";
 const sectionButtonBase = "flex h-9 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition";
@@ -121,7 +122,7 @@ export function Sidebar({ state, collapsed, onToggle }: SidebarProps) {
                   title={state.agent.name}
                 >
                   PI
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-1 ring-sidebar" />
+                  <span className={"absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent ring-1 ring-sidebar"} />
                 </span>
               ) : (
                 <span className="flex h-8 w-8 items-center justify-center rounded-md border border-dashed border-white/20 text-stone-500">
@@ -178,7 +179,7 @@ export function Sidebar({ state, collapsed, onToggle }: SidebarProps) {
                   <label className="flex items-center gap-2">
                     <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10 text-xs font-semibold text-white">
                       PI
-                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-1 ring-sidebar" />
+                      <span className={"absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent ring-1 ring-sidebar"} />
                     </span>
                     <select
                       aria-label="Sidebar agent selector"
