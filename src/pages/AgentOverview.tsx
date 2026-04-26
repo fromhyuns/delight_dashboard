@@ -1,4 +1,6 @@
-import { CreditCard, MoreHorizontal, PlayCircle, ShieldCheck, TestTube2, Wrench } from "lucide-react";
+import { ArrowRight, CreditCard, MoreHorizontal, PlayCircle, TestTube2, Wrench } from "lucide-react";
+import { Fragment } from "react";
+import { Link } from "react-router-dom";
 import type { AppState } from "../App";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Card } from "../components/ui/Card";
@@ -26,6 +28,7 @@ const environmentCards = [
     signal: "Updated",
     detail: "Success rate 98.4%",
     border: "border-l-success",
+    to: "/build/development",
   },
   {
     name: "Staging",
@@ -33,6 +36,7 @@ const environmentCards = [
     signal: "Failed",
     detail: "2 failed cases",
     border: "border-l-warning",
+    to: "/evaluate?tab=test-results",
   },
   {
     name: "Production",
@@ -40,6 +44,7 @@ const environmentCards = [
     signal: "Error rate 3.2% ↑",
     detail: "Elevated payment lookup failures",
     border: "border-l-danger",
+    to: "/build/production-safety",
   },
 ];
 
@@ -85,8 +90,7 @@ function roleActions(role: AppState["role"]) {
       title: "Review Failed Tests",
       description: "Compare the two failed staging cases, rerun the readiness suite, then request approval when the fix is confirmed.",
       primary: "Review Failed Tests",
-      secondary: "Request Approval",
-      secondaryDisabled: false,
+      secondary: "View Details",
     };
   }
 
@@ -94,10 +98,9 @@ function roleActions(role: AppState["role"]) {
     return {
       issueLink: "Open Evaluate",
       title: "Review Production Risk",
-      description: "Inspect the production risk signal, confirm governance boundaries, then approve mitigation or roll back if needed.",
+      description: "Inspect the production risk signal, review governance status, and navigate to Evaluate to see the full risk report.",
       primary: "Review Production Risk",
-      secondary: "Approve or Rollback",
-      secondaryDisabled: false,
+      secondary: "View Details",
     };
   }
 
@@ -107,13 +110,11 @@ function roleActions(role: AppState["role"]) {
     description: "Start with the failed staging cases, then continue build changes before requesting production review.",
     primary: "Review Test",
     secondary: "Continue Build",
-    secondaryDisabled: false,
   };
 }
 
 export function AgentOverview({ app }: PageProps) {
   const actions = roleActions(app.role);
-  const isOperator = app.role === "Agent Builder / Operator";
 
   return (
     <div className="space-y-4">
@@ -159,18 +160,31 @@ export function AgentOverview({ app }: PageProps) {
         </div>
       </Card>
 
-      <div className="grid grid-cols-3 gap-3">
-        {environmentCards.map((environment) => (
-          <Card key={environment.name} className={`border-l-4 p-3 ${environment.border}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-medium uppercase tracking-wide text-muted">{environment.name}</div>
-                <div className="mt-2 text-lg font-semibold text-ink">{environment.signal}</div>
-                <div className="mt-1 text-xs text-muted">{environment.detail}</div>
+      <div className="flex items-stretch">
+        {environmentCards.map((environment, index) => (
+          <Fragment key={environment.name}>
+            {index > 0 && (
+              <div className="flex flex-none items-center px-2 text-stone-400">
+                <ArrowRight size={14} />
               </div>
-              <StatusChip status={environment.status} />
-            </div>
-          </Card>
+            )}
+            <Link to={environment.to} className="group min-w-0 flex-1">
+              <Card className={`h-full border-l-4 p-3 transition-colors group-hover:bg-stone-50 ${environment.border}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted">{environment.name}</div>
+                    <div className="mt-2 text-lg font-semibold text-ink">{environment.signal}</div>
+                    <div className="mt-1 text-xs text-muted">{environment.detail}</div>
+                  </div>
+                  <StatusChip status={environment.status} />
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-xs text-muted opacity-0 transition-opacity group-hover:opacity-100">
+                  <span>View</span>
+                  <ArrowRight size={11} />
+                </div>
+              </Card>
+            </Link>
+          </Fragment>
         ))}
       </div>
 
@@ -198,18 +212,8 @@ export function AgentOverview({ app }: PageProps) {
           <p className="mt-2 text-sm leading-6 text-muted">{actions.description}</p>
           <div className="mt-4 flex items-center gap-2">
             <ActionButton variant="primary">{actions.primary}</ActionButton>
-            <ActionButton
-              variant="secondary"
-              disabled={isOperator && actions.secondary === "Request Approval"}
-              title={isOperator ? "Production approval requires workspace admin access." : undefined}
-            >
-              {app.role === "Org Admin" && <ShieldCheck size={16} />}
-              {actions.secondary}
-            </ActionButton>
+            <ActionButton variant="secondary">{actions.secondary}</ActionButton>
           </div>
-          {isOperator && (
-            <div className="mt-3 text-xs text-muted">Production changes are limited for this role.</div>
-          )}
         </Card>
       </div>
 

@@ -202,15 +202,9 @@ export function HomeDashboard({ app }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">Welcome back, Sora</h1>
-          <p className="mt-1 text-sm text-muted">NAVER Corp · {workspaces.length} workspaces · 26 agents</p>
-        </div>
-        <div className="rounded-md border border-line bg-white px-3 py-2 text-right shadow-card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Current role</div>
-          <div className="mt-0.5 text-sm font-semibold text-ink">{app.role}</div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-ink">Welcome back, Sora</h1>
+        <p className="mt-1 text-sm text-muted">NAVER Corp · {workspaces.length} workspaces · 26 agents</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
