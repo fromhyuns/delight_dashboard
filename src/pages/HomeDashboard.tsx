@@ -6,6 +6,7 @@ import { DataTable } from "../components/ui/DataTable";
 import { StatusChip } from "../components/ui/StatusChip";
 import { AlertTriangle, ClipboardCheck, Gauge, GitBranch, ShieldCheck, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Role } from "../types";
 
 type PageProps = {
@@ -26,6 +27,9 @@ type HomeAction = {
   description: string;
   cta: string;
   emphasized?: boolean;
+  workspaceId?: string;
+  agentId?: string;
+  route?: string;
 };
 
 type WorkspaceRow = {
@@ -71,6 +75,9 @@ const roleContent: Record<Role, RoleContent> = {
         description: "Payment Issue Resolver missed two policy edge cases in the latest suite.",
         cta: "Review Test",
         emphasized: true,
+        workspaceId: "naver-pay",
+        agentId: "refund-review",
+        route: "/evaluate",
       },
       {
         id: "op-2",
@@ -78,6 +85,9 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Continue editing Catalog Monitor",
         description: "Draft instruction changes are ready for a focused build pass.",
         cta: "Open Build",
+        workspaceId: "shopping-support",
+        agentId: "catalog-monitor",
+        route: "/build/development",
       },
       {
         id: "op-3",
@@ -85,6 +95,9 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Check performance variance",
         description: "Reservation CX latency increased after the last development run.",
         cta: "Evaluate",
+        workspaceId: "reservation-cx",
+        agentId: "query-intent",
+        route: "/evaluate",
       },
     ],
     workspaces: [
@@ -115,6 +128,9 @@ const roleContent: Record<Role, RoleContent> = {
         description: "Naver Pay Operations has release candidates blocked by evaluation drift.",
         cta: "Review Failed Tests",
         emphasized: true,
+        workspaceId: "naver-pay",
+        agentId: "refund-review",
+        route: "/evaluate",
       },
       {
         id: "wa-2",
@@ -122,6 +138,9 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Validate deployment readiness",
         description: "Shopping Support needs a final staging run before approval request.",
         cta: "Run Test",
+        workspaceId: "shopping-support",
+        agentId: "catalog-monitor",
+        route: "/build/development",
       },
       {
         id: "wa-3",
@@ -129,6 +148,9 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Submit production approval",
         description: "Reservation CX has passed checks and is ready for controlled promotion.",
         cta: "Request Approval",
+        workspaceId: "reservation-cx",
+        agentId: "query-intent",
+        route: "/build/production-safety",
       },
     ],
     workspaces: [
@@ -159,6 +181,9 @@ const roleContent: Record<Role, RoleContent> = {
         description: "Four agents have restricted actions pending policy review.",
         cta: "View Production Risks",
         emphasized: true,
+        workspaceId: "naver-pay",
+        agentId: "refund-review",
+        route: "/build/production-safety",
       },
       {
         id: "oa-2",
@@ -166,6 +191,8 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Review workspace issue concentration",
         description: "Naver Pay Operations and Global Customer Care need admin follow-up.",
         cta: "Review Workspace Issues",
+        workspaceId: "naver-pay",
+        route: "/workspace",
       },
       {
         id: "oa-3",
@@ -173,6 +200,9 @@ const roleContent: Record<Role, RoleContent> = {
         title: "Open governance coverage",
         description: "Confirm production permissions and trace retention policies.",
         cta: "View Governance",
+        workspaceId: "naver-pay",
+        agentId: "refund-review",
+        route: "/build/production-safety",
       },
     ],
     workspaces: [
@@ -204,8 +234,15 @@ const envDotColor: Record<string, string> = {
 };
 
 export function HomeDashboard({ app }: PageProps) {
+  const navigate = useNavigate();
   const content = roleContent[app.role];
   const envDot = envDotColor[app.environment] ?? "bg-stone-400";
+
+  function handleAction(action: HomeAction) {
+    if (action.workspaceId) app.setWorkspaceId(action.workspaceId);
+    if (action.agentId) app.setAgentId(action.agentId);
+    if (action.route) navigate(action.route);
+  }
 
   return (
     <div className="space-y-3">
@@ -224,7 +261,21 @@ export function HomeDashboard({ app }: PageProps) {
         </div>
       </div>
 
-      {/* ── Primary: Next Actions ─────────────────────────────── */}
+      {/* ── Primary: Status summary ──────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-3">
+        {content.metrics.map((metric) => (
+          <div
+            key={metric.label}
+            className={`rounded-lg border border-line border-l-4 bg-white px-5 py-4 ${metricToneClasses(metric.tone)}`}
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">{metric.label}</div>
+            <div className="mt-1.5 text-4xl font-semibold text-ink">{metric.value}</div>
+            <div className="mt-1 text-xs text-muted">{metric.detail}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Secondary: Next Actions ───────────────────────────── */}
       <div className="rounded-lg border border-line bg-stone-50 p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink">Next Actions</h2>
@@ -249,28 +300,13 @@ export function HomeDashboard({ app }: PageProps) {
               <ActionButton
                 variant={action.emphasized ? "primary" : "secondary"}
                 className="h-8 shrink-0 px-3 text-xs"
+                onClick={() => handleAction(action)}
               >
                 {action.cta}
               </ActionButton>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* ── Secondary: Status summary ─────────────────────────── */}
-      <div className="grid grid-cols-4 gap-2">
-        {content.metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className={`flex items-center gap-3 rounded border border-line border-l-2 bg-white px-3 py-2.5 ${metricToneClasses(metric.tone)}`}
-          >
-            <div className="text-xl font-semibold text-ink">{metric.value}</div>
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">{metric.label}</div>
-              <div className="text-[11px] text-muted">{metric.detail}</div>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ── Tertiary: Portfolio ───────────────────────────────── */}

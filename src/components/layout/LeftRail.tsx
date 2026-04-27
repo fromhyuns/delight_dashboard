@@ -53,11 +53,11 @@ function RailButton({ item, active }: { item: RailItem; active: boolean }) {
       className={`flex h-14 w-14 flex-col items-center justify-center gap-1 rounded-lg transition ${
         active
           ? "bg-white/15 text-white"
-          : "text-stone-400 hover:bg-white/10 hover:text-stone-200"
+          : "text-stone-300 hover:bg-white/10 hover:text-white"
       }`}
     >
       {item.icon}
-      <span className="text-[9px] font-medium leading-none tracking-wide">
+      <span className="text-[10px] font-medium leading-none tracking-wide">
         {item.label}
       </span>
     </Link>

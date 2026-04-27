@@ -33,3 +33,84 @@ select {
   background: #d5cbbd;
   border-radius: 999px;
 }
+
+/* ── Environment pipeline — per-card shine + ring, fully synced ── */
+
+/* Shine stripe: linear = constant speed, no acceleration kinks */
+@keyframes env-shine-slide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(120%);  }
+}
+@keyframes env-shine-show {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Ring: simple stone border, fades in → holds → fades out */
+@keyframes env-card-ring {
+  0%   { box-shadow: 0 0 0 0px  rgba(87,83,78,0);    }
+  20%  { box-shadow: 0 0 0 1.5px rgba(87,83,78,0.45); }
+  80%  { box-shadow: 0 0 0 1.5px rgba(87,83,78,0.45); }
+  100% { box-shadow: 0 0 0 0px  rgba(87,83,78,0);    }
+}
+
+/* Arrow: fires at the handoff moment between two cards */
+@keyframes env-arrow-pulse {
+  0%   { color: #d6d3d1; transform: scale(1);   }
+  40%  { color: #6652d9; transform: scale(1.3);  }
+  60%  { color: #6652d9; transform: scale(1.3);  }
+  100% { color: #d6d3d1; transform: scale(1);   }
+}
+
+/* ── Base states ─────────────────────────────────────────────────── */
+.env-ring { box-shadow: 0 0 0 0px rgba(87,83,78,0); pointer-events: none; }
+.env-shine-wrap  { opacity: 0; pointer-events: none; }
+.env-shine-stripe {
+  background: linear-gradient(
+    90deg,
+    transparent              10%,
+    rgba(220,213,200,0.15)   35%,
+    rgba(220,213,200,0.3)    50%,
+    rgba(220,213,200,0.15)   65%,
+    transparent              90%
+  );
+  transform: translateX(-120%);
+  will-change: transform;
+}
+
+/* Card elevation: subtle lift while the sweep passes over */
+@keyframes env-card-elevation {
+  0%   { box-shadow: 0 1px 2px rgba(31,41,51,0.05); }
+  20%  { box-shadow: 0 4px 16px rgba(31,41,51,0.1), 0 1px 4px rgba(31,41,51,0.06); }
+  80%  { box-shadow: 0 4px 16px rgba(31,41,51,0.1), 0 1px 4px rgba(31,41,51,0.06); }
+  100% { box-shadow: 0 1px 2px rgba(31,41,51,0.05); }
+}
+
+.env-card-1 .env-card-body { animation: env-card-elevation 1.2s ease-in-out 1 0.3s both; }
+.env-card-2 .env-card-body { animation: env-card-elevation 1.2s ease-in-out 1 1.25s both; }
+.env-card-3 .env-card-body { animation: env-card-elevation 1.2s ease-in-out 1 2.2s both; }
+
+/* ── Timing: each card 0.9s, seamless handoff ──────────────────── */
+/* Shine uses `linear` so speed is identical across all 3 cards.
+   Ring shares the exact same delay + duration → always in sync.
+   Arrows fire at each card boundary, bridging the gap. */
+
+/* Ring gradient + shine share identical delay & duration → always in sync */
+/* Group A — Card 1 + Arrow 1: 0.3s → 1.5s */
+.env-card-1 .env-ring        { animation: env-card-ring   1.2s ease-in-out 1 0.3s forwards; }
+.env-card-1 .env-shine-wrap  { animation: env-shine-show  1.2s linear      1 0.3s forwards; }
+.env-card-1 .env-shine-stripe{ animation: env-shine-slide 1.2s linear      1 0.3s both;     }
+.env-arrow-1 { display: inline-flex; animation: env-arrow-pulse 1.2s ease-in-out 1 0.3s both; }
+
+/* Group B — Card 2 + Arrow 2: 1.25s → 2.45s (0.25s overlap with A) */
+.env-card-2 .env-ring        { animation: env-card-ring   1.2s ease-in-out 1 1.25s forwards; }
+.env-card-2 .env-shine-wrap  { animation: env-shine-show  1.2s linear      1 1.25s forwards; }
+.env-card-2 .env-shine-stripe{ animation: env-shine-slide 1.2s linear      1 1.25s both;     }
+.env-arrow-2 { display: inline-flex; animation: env-arrow-pulse 1.2s ease-in-out 1 1.25s both; }
+
+/* Group C — Card 3: 2.2s → 3.4s (0.25s overlap with B) */
+.env-card-3 .env-ring        { animation: env-card-ring   1.2s ease-in-out 1 2.2s forwards; }
+.env-card-3 .env-shine-wrap  { animation: env-shine-show  1.2s linear      1 2.2s forwards; }
+.env-card-3 .env-shine-stripe{ animation: env-shine-slide 1.2s linear      1 2.2s both;     }

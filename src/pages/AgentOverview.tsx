@@ -11,7 +11,7 @@ import {
   TriangleAlert,
   Wrench,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { AppState } from "../App";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Card } from "../components/ui/Card";
@@ -95,9 +95,9 @@ function EnvStatusBadge({ status }: { status: EnvStatus }) {
 type EnvVariant = "dev" | "staging" | "prod";
 
 const envVariantStyles: Record<EnvVariant, { cardBg: string; border: string; iconBg: string; iconText: string; headerBg: string }> = {
-  dev:     { cardBg: "bg-white",        border: "border-violet-100", iconBg: "bg-violet-50",  iconText: "text-violet-400", headerBg: "bg-violet-50" },
-  staging: { cardBg: "bg-violet-50",    border: "border-violet-200", iconBg: "bg-violet-100", iconText: "text-violet-500", headerBg: "bg-violet-100" },
-  prod:    { cardBg: "bg-violet-100",   border: "border-violet-300", iconBg: "bg-violet-200", iconText: "text-violet-600", headerBg: "bg-violet-200" },
+  dev:     { cardBg: "bg-white", border: "border-line", iconBg: "bg-stone-50",  iconText: "text-stone-400", headerBg: "bg-stone-50"  },
+  staging: { cardBg: "bg-white", border: "border-line", iconBg: "bg-stone-100", iconText: "text-stone-500", headerBg: "bg-stone-50"  },
+  prod:    { cardBg: "bg-white", border: "border-line", iconBg: "bg-stone-100", iconText: "text-stone-600", headerBg: "bg-stone-50"  },
 };
 
 function EnvCard({
@@ -106,31 +106,40 @@ function EnvCard({
   status,
   metric,
   variant,
+  cardClass,
 }: {
   icon: ReactNode;
   name: string;
   status: EnvStatus;
   metric: string;
   variant: EnvVariant;
+  cardClass: string;
 }) {
   const v = envVariantStyles[variant];
   return (
-    <div className={`min-w-0 flex-1 overflow-hidden rounded-lg border ${v.cardBg} ${v.border}`}>
-      <div className="flex items-start gap-3.5 p-4">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${v.border} ${v.iconBg} ${v.iconText}`}>
-          {icon}
+    <div className={`${cardClass} relative isolate min-w-0 flex-1`}>
+      <div className="env-ring absolute -inset-[1.5px] rounded-[9.5px] -z-10" />
+      <div className={`env-card-body relative overflow-hidden rounded-lg border ${v.cardBg} ${v.border}`}>
+        <div className="flex items-start gap-3.5 p-4">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${v.border} ${v.iconBg} ${v.iconText}`}>
+            {icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Environment</div>
+            <div className="mt-0.5 text-sm font-semibold text-ink">{name}</div>
+          </div>
+          <EnvStatusBadge status={status} />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Environment</div>
-          <div className="mt-0.5 text-sm font-semibold text-ink">{name}</div>
+        <div className={`flex items-center justify-between border-t ${v.border} ${v.headerBg} px-4 py-3`}>
+          <span className="text-xs text-muted">{metric}</span>
+          <button className="rounded border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink hover:bg-stone-50">
+            View detail
+          </button>
         </div>
-        <EnvStatusBadge status={status} />
-      </div>
-      <div className={`flex items-center justify-between border-t ${v.border} ${v.headerBg} px-4 py-3`}>
-        <span className="text-xs text-muted">{metric}</span>
-        <button className="rounded border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink hover:bg-stone-50">
-          View detail
-        </button>
+        {/* Shine clipped to this card only — linear speed matches neighbouring cards */}
+        <div className="env-shine-wrap absolute inset-0">
+          <div className="env-shine-stripe absolute inset-0" />
+        </div>
       </div>
     </div>
   );
@@ -138,6 +147,11 @@ function EnvCard({
 
 export function AgentOverview({ app }: PageProps) {
   const actions = roleActions(app.role);
+  const [pipelineKey, setPipelineKey] = useState(app.agent.id);
+
+  useEffect(() => {
+    setPipelineKey(app.agent.id);
+  }, [app.agent.id]);
 
   return (
     <div className="space-y-4">
@@ -185,8 +199,8 @@ export function AgentOverview({ app }: PageProps) {
           </div>
         </div>
 
-        {/* Environment sub-cards */}
-        <div className="px-5 pb-5">
+        {/* Environment pipeline */}
+        <div key={pipelineKey} className="px-5 pb-5">
           <div className="flex items-center gap-2">
             <EnvCard
               icon={<Code2 size={16} />}
@@ -194,22 +208,29 @@ export function AgentOverview({ app }: PageProps) {
               status="Stable"
               metric="Success Rate 98.4%"
               variant="dev"
+              cardClass="env-card-1"
             />
-            <ChevronRight size={14} className="shrink-0 text-stone-300" />
+            <span className="env-arrow-1 shrink-0">
+              <ChevronRight size={14} />
+            </span>
             <EnvCard
               icon={<Layers size={16} />}
               name="Staging"
               status="Attention"
               metric="2 failed cases"
               variant="staging"
+              cardClass="env-card-2"
             />
-            <ChevronRight size={14} className="shrink-0 text-stone-300" />
+            <span className="env-arrow-2 shrink-0">
+              <ChevronRight size={14} />
+            </span>
             <EnvCard
               icon={<Rocket size={16} />}
               name="Production"
               status="At Risk"
               metric="Error rate 3.2%"
               variant="prod"
+              cardClass="env-card-3"
             />
           </div>
         </div>

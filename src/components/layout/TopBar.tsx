@@ -8,10 +8,11 @@ import { CommandPalette } from "../ui/CommandPalette";
 
 const environments: Environment[] = ["Development", "Staging", "Production"];
 
-const envDot: Record<Environment, string> = {
-  Development: "bg-sky-400",
-  Staging:     "bg-amber-400",
-  Production:  "bg-emerald-500",
+
+const lockedEnvByRoute: Partial<Record<string, Environment>> = {
+  "/build/development":       "Development",
+  "/build/production-safety": "Production",
+  "/evaluate":                "Production",
 };
 
 type TopBarProps = { state: AppState };
@@ -20,18 +21,10 @@ export function TopBar({ state }: TopBarProps) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Auto-set environment for certain routes
-  const routeEnvironment =
-    location.pathname === "/build/development"
-      ? "Development"
-      : location.pathname === "/build/production-safety"
-        ? "Production"
-        : location.pathname === "/evaluate"
-          ? "Production"
-          : undefined;
+  const lockedEnv = lockedEnvByRoute[location.pathname];
 
   useEffect(() => {
-    if (routeEnvironment) state.setEnvironment(routeEnvironment);
+    if (lockedEnv) state.setEnvironment(lockedEnv);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -45,102 +38,110 @@ export function TopBar({ state }: TopBarProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const isHome      = location.pathname === "/";
+  const showWorkspace = !isHome;
+  const showAgent   = ["/agent", "/build/development", "/build/production-safety", "/evaluate"].includes(location.pathname);
+  const showEnv     = showAgent && location.pathname !== "/agent";
+
   return (
     <>
       <header className="relative flex h-14 items-center justify-between border-b border-line bg-white px-5">
-        {/* Left: branding + selectors */}
-        <div className="flex items-center gap-5">
-          {/* Brand */}
-          <div className="flex shrink-0 items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar text-xs font-bold text-white">
-              D
-            </div>
-            <span className="text-sm font-semibold text-ink">Delight.ai</span>
+
+        {/* Left: logo + breadcrumb */}
+        <div className="flex items-center gap-4">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sidebar text-xs font-bold text-white">
+            D
           </div>
 
-          <div className="h-5 w-px bg-line" />
-
-          {/* Org / Workspace / Agent breadcrumb selectors */}
-          <div className="flex items-center gap-1 text-sm">
-            {/* Organization — static label */}
-            <span className="text-muted">NAVER Corp</span>
-
-            <span className="px-1 text-stone-300">/</span>
-
-            {/* Workspace — dropdown */}
-            <div className="relative">
-              <div className="flex cursor-pointer items-center gap-0.5">
-                <span className="font-medium text-ink">{state.workspace.name}</span>
-                <ChevronDown size={12} className="text-muted" />
-              </div>
-              <select
-                value={state.workspace.id}
-                onChange={(e) => state.setWorkspaceId(e.target.value)}
-                className="absolute inset-0 cursor-pointer opacity-0"
-              >
-                {workspaces.map((ws) => (
-                  <option key={ws.id} value={ws.id}>{ws.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <span className="px-1 text-stone-300">/</span>
-
-            {/* Agent — dropdown */}
-            <div className="relative">
-              <div className="flex cursor-pointer items-center gap-0.5">
-                <span className="font-medium text-ink">{state.agent.name}</span>
-                <ChevronDown size={12} className="text-muted" />
-              </div>
-              <select
-                value={state.agent.id}
-                onChange={(e) => state.setAgentId(e.target.value)}
-                className="absolute inset-0 cursor-pointer opacity-0"
-              >
-                {agents
-                  .filter((a) => a.workspaceId === state.workspace.id)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Environment — hidden on Overview (all-env comparison), shown on Build/Test/Evaluate */}
-          {location.pathname !== "/agent" && (
+          {showWorkspace && (
             <>
               <div className="h-5 w-px bg-line" />
-              <div className="relative">
-                <div className="flex cursor-pointer items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${envDot[state.environment]}`} />
-                  <span className="text-sm font-medium text-ink">{state.environment}</span>
-                  <ChevronDown size={12} className="text-muted" />
+              <div className="flex items-center gap-1 text-sm">
+                <div className="relative">
+                  <div className="flex cursor-pointer items-center gap-0.5">
+                    <span className="font-medium text-ink">{state.workspace.name}</span>
+                    <ChevronDown size={12} className="text-muted" />
+                  </div>
+                  <select
+                    value={state.workspace.id}
+                    onChange={(e) => state.setWorkspaceId(e.target.value)}
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                  >
+                    {workspaces.map((ws) => (
+                      <option key={ws.id} value={ws.id}>{ws.name}</option>
+                    ))}
+                  </select>
                 </div>
-                <select
-                  value={state.environment}
-                  onChange={(e) => state.setEnvironment(e.target.value as Environment)}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                >
-                  {environments.map((env) => (
-                    <option key={env} value={env}>{env}</option>
-                  ))}
-                </select>
+
+                {showAgent && (
+                  <>
+                    <span className="px-1 text-stone-300">/</span>
+                    <div className="relative">
+                      <div className="flex cursor-pointer items-center gap-0.5">
+                        <span className="font-medium text-ink">{state.agent.name}</span>
+                        <ChevronDown size={12} className="text-muted" />
+                      </div>
+                      <select
+                        value={state.agent.id}
+                        onChange={(e) => state.setAgentId(e.target.value)}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                      >
+                        {agents
+                          .filter((a) => a.workspaceId === state.workspace.id)
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}
         </div>
 
-        {/* Right: search + notifications + profile */}
+        {/* Right: env pill switcher (conditional) + search + bell + profile */}
         <div className="flex items-center gap-3">
+
+          {/* Environment pill tabs */}
+          {showEnv && (
+            <>
+              <div className="flex items-center rounded-md border border-line bg-stone-50 p-0.5">
+                {environments.map((env) => {
+                  const isActive = state.environment === env;
+                  const isLocked = !!lockedEnv && lockedEnv !== env;
+                  return (
+                    <button
+                      key={env}
+                      disabled={isLocked}
+                      onClick={() => { if (!lockedEnv) state.setEnvironment(env); }}
+                      className={`rounded px-2.5 py-1 text-xs font-medium transition ${
+                        isActive
+                          ? "bg-stone-900 text-white"
+                          : isLocked
+                          ? "cursor-not-allowed text-stone-300"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      {env}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="h-5 w-px bg-line" />
+            </>
+          )}
+
+          {/* Search icon */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex min-w-[200px] items-center gap-2 rounded-md border border-line bg-stone-50 px-3 text-muted hover:border-accent/40 hover:bg-white"
+            title="Search (⌘K)"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-line bg-white text-muted hover:bg-stone-50 hover:text-ink"
           >
-            <Search size={14} className="shrink-0" />
-            <span className="h-8 flex-1 text-left text-sm leading-8">Search anything...</span>
-            <kbd className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+            <Search size={15} />
           </button>
 
+          {/* Notifications */}
           <button className="relative flex h-8 w-8 items-center justify-center rounded-md border border-line bg-white text-muted hover:bg-stone-50 hover:text-ink">
             <Bell size={16} />
             <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-semibold text-white">
@@ -148,15 +149,13 @@ export function TopBar({ state }: TopBarProps) {
             </span>
           </button>
 
+          {/* Profile — avatar + name, role switcher via hidden select */}
           <div className="relative">
             <div className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-2.5 py-1 hover:bg-stone-50">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white">
                 SK
               </span>
-              <span>
-                <span className="block text-sm font-medium leading-tight text-ink">Sora Kim</span>
-                <span className="block text-[11px] leading-tight text-muted">{state.role}</span>
-              </span>
+              <span className="text-sm font-medium text-ink">Sora Kim</span>
               <ChevronDown size={13} className="ml-0.5 text-muted" />
             </div>
             <select
