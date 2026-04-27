@@ -197,39 +197,47 @@ function metricToneClasses(tone: Metric["tone"]) {
   return "border-l-accent";
 }
 
+const envDotColor: Record<string, string> = {
+  Development: "bg-sky-400",
+  Staging: "bg-amber-400",
+  Production: "bg-emerald-500",
+};
+
 export function HomeDashboard({ app }: PageProps) {
   const content = roleContent[app.role];
+  const envDot = envDotColor[app.environment] ?? "bg-stone-400";
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink">Welcome back, Sora</h1>
-        <p className="mt-1 text-sm text-muted">NAVER Corp · {workspaces.length} workspaces · 26 agents</p>
+    <div className="space-y-3">
+      {/* Page header */}
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">Welcome back, Sora</h1>
+          <p className="mt-0.5 text-sm text-muted">
+            NAVER Corp · {workspaces.length} workspaces · 26 agents
+          </p>
+        </div>
+        {/* Environment indicator — contextual, not a primary control */}
+        <div className="flex items-center gap-1.5 rounded border border-line bg-stone-50 px-2.5 py-1.5">
+          <span className={`h-2 w-2 rounded-full ${envDot}`} />
+          <span className="text-xs font-medium text-muted">{app.environment}</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        {content.metrics.map((metric) => (
-          <Card key={metric.label} className={`border-l-4 p-3 ${metricToneClasses(metric.tone)}`}>
-            <div className="text-xs font-medium uppercase tracking-wide text-muted">{metric.label}</div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <div className="text-2xl font-semibold text-ink">{metric.value}</div>
-              <div className="text-xs text-muted">{metric.detail}</div>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-ink">Next Actions</h2>
+      {/* ── Primary: Next Actions ─────────────────────────────── */}
+      <div className="rounded-lg border border-line bg-stone-50 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink">Next Actions</h2>
           <span className="text-xs text-muted">Prioritized for {app.role}</span>
         </div>
         <div className="divide-y divide-line">
           {content.actions.map((action) => (
-            <div key={action.id} className="flex items-center gap-3 py-2.5">
+            <div key={action.id} className="flex items-center gap-3 py-3">
               <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${
-                  action.emphasized ? "border-violet-200 bg-accentSoft text-accent" : "border-line bg-stone-50 text-muted"
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
+                  action.emphasized
+                    ? "border-stone-300 bg-ink text-white"
+                    : "border-line bg-white text-muted"
                 }`}
               >
                 {action.icon}
@@ -238,63 +246,88 @@ export function HomeDashboard({ app }: PageProps) {
                 <div className="truncate text-sm font-semibold text-ink">{action.title}</div>
                 <div className="truncate text-xs text-muted">{action.description}</div>
               </div>
-              <ActionButton variant={action.emphasized ? "primary" : "secondary"} className="h-8 shrink-0 px-2.5 text-xs">
+              <ActionButton
+                variant={action.emphasized ? "primary" : "secondary"}
+                className="h-8 shrink-0 px-3 text-xs"
+              >
                 {action.cta}
               </ActionButton>
             </div>
           ))}
         </div>
-      </Card>
+      </div>
 
-      <div className="grid grid-cols-[0.95fr_1.35fr] gap-4">
-        <Card className="p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-ink">Workspace Overview</h2>
-            <span className="text-xs text-muted">4 workspaces</span>
+      {/* ── Secondary: Status summary ─────────────────────────── */}
+      <div className="grid grid-cols-4 gap-2">
+        {content.metrics.map((metric) => (
+          <div
+            key={metric.label}
+            className={`flex items-center gap-3 rounded border border-line border-l-2 bg-white px-3 py-2.5 ${metricToneClasses(metric.tone)}`}
+          >
+            <div className="text-xl font-semibold text-ink">{metric.value}</div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">{metric.label}</div>
+              <div className="text-[11px] text-muted">{metric.detail}</div>
+            </div>
           </div>
-          <DataTable<WorkspaceRow>
-            rows={content.workspaces}
-            getRowKey={(row) => row.id}
-            columns={[
-              { key: "workspace", header: "Workspace", render: (row) => <div className="font-medium">{row.workspace}</div> },
-              { key: "agents", header: "Agents", render: (row) => row.agents, className: "w-16" },
-              { key: "issues", header: "Issues", render: (row) => <span className="text-muted">{row.issues}</span> },
-              { key: "status", header: "Status", render: (row) => <StatusChip status={row.status} /> },
-              { key: "trend", header: "Trend", render: (row) => row.trend },
-            ]}
-          />
-        </Card>
+        ))}
+      </div>
 
-        <Card className="p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-ink">Relevant Agents</h2>
-            <span className="text-xs text-muted">Role-filtered</span>
-          </div>
-          <DataTable<AgentRow>
-            rows={content.agents}
-            getRowKey={(row) => row.id}
-            columns={[
-              { key: "agent", header: "Agent", render: (row) => <div className="font-medium">{row.agent}</div> },
-              { key: "workspace", header: "Workspace", render: (row) => <span className="text-muted">{row.workspace}</span> },
-              { key: "environments", header: "Environments", render: (row) => row.environments },
-              { key: "last", header: "Last Updated", render: (row) => row.lastUpdated },
-              { key: "status", header: "Status", render: (row) => <StatusChip status={row.status} /> },
-              {
-                key: "action",
-                header: "Action",
-                render: (row) => (
-                  <ActionButton
-                    variant={row.permission === "enabled" ? "secondary" : "quiet"}
-                    className="h-7 px-2 text-xs"
-                    disabled={row.permission === "approval"}
-                  >
-                    {row.permission === "approval" ? "Approval needed" : row.action}
-                  </ActionButton>
-                ),
-              },
-            ]}
-          />
-        </Card>
+      {/* ── Tertiary: Portfolio ───────────────────────────────── */}
+      <div>
+        <div className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+          Portfolio
+        </div>
+        <div className="grid grid-cols-[0.95fr_1.35fr] gap-3">
+          <Card className="p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">Workspace Overview</h2>
+              <span className="text-xs text-muted">4 workspaces</span>
+            </div>
+            <DataTable<WorkspaceRow>
+              rows={content.workspaces}
+              getRowKey={(row) => row.id}
+              columns={[
+                { key: "workspace", header: "Workspace", render: (row) => <div className="font-medium">{row.workspace}</div> },
+                { key: "agents", header: "Agents", render: (row) => row.agents, className: "w-16" },
+                { key: "issues", header: "Issues", render: (row) => <span className="text-muted">{row.issues}</span> },
+                { key: "status", header: "Status", render: (row) => <StatusChip status={row.status} /> },
+                { key: "trend", header: "Trend", render: (row) => row.trend },
+              ]}
+            />
+          </Card>
+
+          <Card className="p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">Relevant Agents</h2>
+              <span className="text-xs text-muted">Role-filtered</span>
+            </div>
+            <DataTable<AgentRow>
+              rows={content.agents}
+              getRowKey={(row) => row.id}
+              columns={[
+                { key: "agent", header: "Agent", render: (row) => <div className="font-medium">{row.agent}</div> },
+                { key: "workspace", header: "Workspace", render: (row) => <span className="text-muted">{row.workspace}</span> },
+                { key: "environments", header: "Environments", render: (row) => row.environments },
+                { key: "last", header: "Last Updated", render: (row) => row.lastUpdated },
+                { key: "status", header: "Status", render: (row) => <StatusChip status={row.status} /> },
+                {
+                  key: "action",
+                  header: "Action",
+                  render: (row) => (
+                    <ActionButton
+                      variant={row.permission === "enabled" ? "secondary" : "quiet"}
+                      className="h-7 px-2 text-xs"
+                      disabled={row.permission === "approval"}
+                    >
+                      {row.permission === "approval" ? "Approval needed" : row.action}
+                    </ActionButton>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+        </div>
       </div>
     </div>
   );

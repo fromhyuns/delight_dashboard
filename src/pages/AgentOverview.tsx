@@ -1,116 +1,139 @@
-import { ArrowRight, CreditCard, MoreHorizontal, PlayCircle, TestTube2, Wrench } from "lucide-react";
-import { Fragment } from "react";
-import { Link } from "react-router-dom";
+import {
+  ChevronRight,
+  Code2,
+  CreditCard,
+  Layers,
+  LayoutGrid,
+  MoreHorizontal,
+  RefreshCw,
+  Rocket,
+  TestTube2,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
+import type { ReactNode } from "react";
 import type { AppState } from "../App";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Card } from "../components/ui/Card";
-import { DataTable } from "../components/ui/DataTable";
 import { MetricCard } from "../components/ui/MetricCard";
-import { StatusChip } from "../components/ui/StatusChip";
 
 type PageProps = {
   app: AppState;
 };
 
+type EnvStatus = "Stable" | "Attention" | "At Risk";
+
 type ActivityRow = {
   id: string;
+  icon: ReactNode;
   event: string;
-  environment: string;
+  envTag: string;
   owner: string;
+  ownerInitials: string;
+  ownerColor: string;
   time: string;
-  status: string;
 };
-
-const environmentCards = [
-  {
-    name: "Development",
-    status: "Healthy",
-    signal: "Updated",
-    detail: "Success rate 98.4%",
-    border: "border-l-success",
-    to: "/build/development",
-  },
-  {
-    name: "Staging",
-    status: "Attention",
-    signal: "Failed",
-    detail: "2 failed cases",
-    border: "border-l-warning",
-    to: "/evaluate?tab=test-results",
-  },
-  {
-    name: "Production",
-    status: "At Risk",
-    signal: "Error rate 3.2% ↑",
-    detail: "Elevated payment lookup failures",
-    border: "border-l-danger",
-    to: "/build/production-safety",
-  },
-];
 
 const activityRows: ActivityRow[] = [
   {
     id: "act-1",
-    event: "Staging test failed for missing order lookup",
-    environment: "Staging",
-    owner: "Sora Kim",
-    time: "12 min ago",
-    status: "Attention",
+    icon: <RefreshCw size={15} className="text-sky-500" />,
+    event: "Prompt Template Updated",
+    envTag: "STAGING",
+    owner: "Sarah J.",
+    ownerInitials: "SJ",
+    ownerColor: "bg-teal-500",
+    time: "12m ago",
   },
   {
     id: "act-2",
-    event: "Development instructions updated",
-    environment: "Development",
-    owner: "Sora Kim",
-    time: "31 min ago",
-    status: "Healthy",
+    icon: <TriangleAlert size={15} className="text-amber-500" />,
+    event: "Production Release v2.4.1",
+    envTag: "PROD",
+    owner: "Mike R.",
+    ownerInitials: "MR",
+    ownerColor: "bg-orange-500",
+    time: "2h ago",
   },
   {
     id: "act-3",
-    event: "Production error-rate threshold exceeded",
-    environment: "Production",
-    owner: "Ops Monitor",
-    time: "48 min ago",
-    status: "At Risk",
-  },
-  {
-    id: "act-4",
-    event: "Refund handoff policy check passed",
-    environment: "Staging",
-    owner: "Daniel Choi",
-    time: "2 hrs ago",
-    status: "Stable",
+    icon: <LayoutGrid size={15} className="text-sky-500" />,
+    event: "Dev Sandbox Reset",
+    envTag: "DEV",
+    owner: "Alex K.",
+    ownerInitials: "AK",
+    ownerColor: "bg-blue-500",
+    time: "5h ago",
   },
 ];
 
 function roleActions(role: AppState["role"]) {
   if (role === "Workspace Admin") {
-    return {
-      issueLink: "Open Test",
-      title: "Review Failed Tests",
-      description: "Compare the two failed staging cases, rerun the readiness suite, then request approval when the fix is confirmed.",
-      primary: "Review Failed Tests",
-      secondary: "View Details",
-    };
+    return { primary: "Review Failed Tests", secondary: "View Details" };
   }
-
   if (role === "Org Admin") {
-    return {
-      issueLink: "Open Evaluate",
-      title: "Review Production Risk",
-      description: "Inspect the production risk signal, review governance status, and navigate to Evaluate to see the full risk report.",
-      primary: "Review Production Risk",
-      secondary: "View Details",
-    };
+    return { primary: "Review Production Risk", secondary: "View Details" };
   }
+  return { primary: "Review Test", secondary: "Continue Build" };
+}
 
-  return {
-    issueLink: "Open Evaluate",
-    title: "Review Test",
-    description: "Start with the failed staging cases, then continue build changes before requesting production review.",
-    primary: "Review Test",
-    secondary: "Continue Build",
+function EnvStatusBadge({ status }: { status: EnvStatus }) {
+  const map: Record<EnvStatus, { dot: string; text: string; border: string; bg: string; label: string }> = {
+    Stable:      { dot: "bg-success",  text: "text-success",  border: "border-success/30",  bg: "bg-success/5",  label: "STABLE"    },
+    Attention:   { dot: "bg-warning",  text: "text-warning",  border: "border-warning/30",  bg: "bg-warning/5",  label: "ATTENTION" },
+    "At Risk":   { dot: "bg-danger",   text: "text-danger",   border: "border-danger/30",   bg: "bg-danger/5",   label: "AT RISK"   },
   };
+  const s = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${s.text} ${s.border} ${s.bg}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+}
+
+type EnvVariant = "dev" | "staging" | "prod";
+
+const envVariantStyles: Record<EnvVariant, { cardBg: string; border: string; iconBg: string; iconText: string; headerBg: string }> = {
+  dev:     { cardBg: "bg-white",        border: "border-violet-100", iconBg: "bg-violet-50",  iconText: "text-violet-400", headerBg: "bg-violet-50" },
+  staging: { cardBg: "bg-violet-50",    border: "border-violet-200", iconBg: "bg-violet-100", iconText: "text-violet-500", headerBg: "bg-violet-100" },
+  prod:    { cardBg: "bg-violet-100",   border: "border-violet-300", iconBg: "bg-violet-200", iconText: "text-violet-600", headerBg: "bg-violet-200" },
+};
+
+function EnvCard({
+  icon,
+  name,
+  status,
+  metric,
+  variant,
+}: {
+  icon: ReactNode;
+  name: string;
+  status: EnvStatus;
+  metric: string;
+  variant: EnvVariant;
+}) {
+  const v = envVariantStyles[variant];
+  return (
+    <div className={`min-w-0 flex-1 overflow-hidden rounded-lg border ${v.cardBg} ${v.border}`}>
+      <div className="flex items-start gap-3.5 p-4">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${v.border} ${v.iconBg} ${v.iconText}`}>
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Environment</div>
+          <div className="mt-0.5 text-sm font-semibold text-ink">{name}</div>
+        </div>
+        <EnvStatusBadge status={status} />
+      </div>
+      <div className={`flex items-center justify-between border-t ${v.border} ${v.headerBg} px-4 py-3`}>
+        <span className="text-xs text-muted">{metric}</span>
+        <button className="rounded border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink hover:bg-stone-50">
+          View detail
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function AgentOverview({ app }: PageProps) {
@@ -118,8 +141,10 @@ export function AgentOverview({ app }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4">
-        <div className="flex items-start justify-between gap-5">
+      {/* ── Primary: Agent Decision Surface ──────────────────────────── */}
+      <Card className="overflow-hidden p-0">
+        {/* Agent header */}
+        <div className="flex items-start justify-between gap-5 p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line bg-stone-50 text-accent">
               <CreditCard size={21} />
@@ -127,7 +152,9 @@ export function AgentOverview({ app }: PageProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-semibold text-ink">Payment Issue Resolver</h1>
-                <StatusChip status="Needs attention" />
+                <span className="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
+                  Needs attention
+                </span>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
                 <span>My agent</span>
@@ -140,8 +167,7 @@ export function AgentOverview({ app }: PageProps) {
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <ActionButton variant="secondary">
               <Wrench size={16} />
               Open Build
@@ -158,65 +184,56 @@ export function AgentOverview({ app }: PageProps) {
             </button>
           </div>
         </div>
+
+        {/* Environment sub-cards */}
+        <div className="px-5 pb-5">
+          <div className="flex items-center gap-2">
+            <EnvCard
+              icon={<Code2 size={16} />}
+              name="Development"
+              status="Stable"
+              metric="Success Rate 98.4%"
+              variant="dev"
+            />
+            <ChevronRight size={14} className="shrink-0 text-stone-300" />
+            <EnvCard
+              icon={<Layers size={16} />}
+              name="Staging"
+              status="Attention"
+              metric="2 failed cases"
+              variant="staging"
+            />
+            <ChevronRight size={14} className="shrink-0 text-stone-300" />
+            <EnvCard
+              icon={<Rocket size={16} />}
+              name="Production"
+              status="At Risk"
+              metric="Error rate 3.2%"
+              variant="prod"
+            />
+          </div>
+        </div>
+
+        {/* Issue + recommended action */}
+        <div className="flex items-start justify-between gap-8 border-t border-line px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Issue</div>
+            <div className="mt-1 text-sm font-semibold text-ink">Missing order after payment</div>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              Not consistently matching payment confirmations to newly created order IDs. Isolated to 2 staging cases and one production risk signal.
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Recommended Action</div>
+            <div className="mt-2 flex gap-2">
+              <ActionButton variant="primary">{actions.primary}</ActionButton>
+              <ActionButton variant="secondary">{actions.secondary}</ActionButton>
+            </div>
+          </div>
+        </div>
       </Card>
 
-      <div className="flex items-stretch">
-        {environmentCards.map((environment, index) => (
-          <Fragment key={environment.name}>
-            {index > 0 && (
-              <div className="flex flex-none items-center px-2 text-stone-400">
-                <ArrowRight size={14} />
-              </div>
-            )}
-            <Link to={environment.to} className="group min-w-0 flex-1">
-              <Card className={`h-full border-l-4 p-3 transition-colors group-hover:bg-stone-50 ${environment.border}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-medium uppercase tracking-wide text-muted">{environment.name}</div>
-                    <div className="mt-2 text-lg font-semibold text-ink">{environment.signal}</div>
-                    <div className="mt-1 text-xs text-muted">{environment.detail}</div>
-                  </div>
-                  <StatusChip status={environment.status} />
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-xs text-muted opacity-0 transition-opacity group-hover:opacity-100">
-                  <span>View</span>
-                  <ArrowRight size={11} />
-                </div>
-              </Card>
-            </Link>
-          </Fragment>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-[1.1fr_0.9fr] gap-4">
-        <Card className="p-4">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-accent">Top affected capability</div>
-              <h2 className="mt-1 text-lg font-semibold text-ink">Missing order after payment</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                The agent is not consistently matching successful payment confirmations to newly created order IDs.
-                The issue is isolated to two staging cases and one production risk signal.
-              </p>
-            </div>
-            <ActionButton variant="secondary" className="shrink-0">
-              <PlayCircle size={16} />
-              {actions.issueLink}
-            </ActionButton>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-accent">Next recommended action</div>
-          <h2 className="mt-1 text-lg font-semibold text-ink">{actions.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">{actions.description}</p>
-          <div className="mt-4 flex items-center gap-2">
-            <ActionButton variant="primary">{actions.primary}</ActionButton>
-            <ActionButton variant="secondary">{actions.secondary}</ActionButton>
-          </div>
-        </Card>
-      </div>
-
+      {/* ── Secondary: Metrics ───────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-3">
         <MetricCard label="Conversations" value="18,420" detail="Production · last 7 days" />
         <MetricCard label="Success rate" value="94.8%" detail="Down 1.6 pts from baseline" />
@@ -224,22 +241,63 @@ export function AgentOverview({ app }: PageProps) {
         <MetricCard label="Escalation rate" value="7.4%" detail="Up 0.9 pts this week" />
       </div>
 
-      <Card className="p-4">
-        <div className="mb-3 flex items-center justify-between">
+      {/* ── Secondary: Activity ──────────────────────────────────────── */}
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">Recent Alerts & Activity</h2>
-          <span className="text-xs text-muted">Payment Issue Resolver</span>
+          <div className="flex gap-2">
+            <ActionButton variant="secondary" className="h-7 px-3 text-xs">Filter</ActionButton>
+            <ActionButton variant="secondary" className="h-7 px-3 text-xs">Export</ActionButton>
+          </div>
         </div>
-        <DataTable<ActivityRow>
-          rows={activityRows}
-          getRowKey={(row) => row.id}
-          columns={[
-            { key: "event", header: "Event", render: (row) => <div className="font-medium">{row.event}</div> },
-            { key: "environment", header: "Environment", render: (row) => row.environment },
-            { key: "owner", header: "Owner", render: (row) => row.owner },
-            { key: "time", header: "Time", render: (row) => row.time },
-            { key: "status", header: "Status", render: (row) => <StatusChip status={row.status} /> },
-          ]}
-        />
+
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-line">
+              {["Event", "Environment", "Owner", "Time", "Status"].map((col) => (
+                <th
+                  key={col}
+                  className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted"
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {activityRows.map((row) => (
+              <tr key={row.id} className="hover:bg-stone-50/50">
+                <td className="py-3 pr-4">
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0">{row.icon}</span>
+                    <span className="text-sm font-medium text-ink">{row.event}</span>
+                  </div>
+                </td>
+                <td className="py-3 pr-4">
+                  <span className="rounded border border-line bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-muted">
+                    {row.envTag}
+                  </span>
+                </td>
+                <td className="py-3 pr-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.ownerColor}`}>
+                      {row.ownerInitials}
+                    </span>
+                    <span className="text-sm text-ink">{row.owner}</span>
+                  </div>
+                </td>
+                <td className="py-3 pr-4 text-sm text-muted">{row.time}</td>
+                <td className="py-3">
+                  <span className="text-sm font-medium text-success">Success</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="mt-4 border-t border-line pt-3 text-center">
+          <button className="text-sm font-medium text-accent hover:underline">View All Activity</button>
+        </div>
       </Card>
     </div>
   );
