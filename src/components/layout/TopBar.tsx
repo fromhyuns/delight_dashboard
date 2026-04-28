@@ -6,6 +6,14 @@ import type { AppState } from "../../App";
 import type { Environment, Role } from "../../types";
 import { CommandPalette } from "../ui/CommandPalette";
 
+type ProfileInfo = { name: string; initials: string };
+
+const profileByRole: Record<Role, ProfileInfo> = {
+  "Org Admin":                  { name: "Sora Kim",   initials: "SK" },
+  "Workspace Admin":            { name: "Minho Park",  initials: "MP" },
+  "Agent Builder / Operator":   { name: "Jisoo Lee",   initials: "JL" },
+};
+
 const environments: Environment[] = ["Development", "Staging", "Production"];
 
 
@@ -149,14 +157,19 @@ export function TopBar({ state }: TopBarProps) {
             </span>
           </button>
 
-          {/* Profile — avatar + name, role switcher via hidden select */}
+          {/* Profile — avatar + name + role, switcher via hidden select */}
           <div className="relative">
-            <div className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-2.5 py-1 hover:bg-stone-50">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white">
-                SK
+            <div className="flex h-[46px] cursor-pointer items-center gap-3 rounded-xl border border-stone-200 bg-white px-3 hover:bg-stone-50 transition">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white">
+                {profileByRole[state.role].initials}
               </span>
-              <span className="text-sm font-medium text-ink">Sora Kim</span>
-              <ChevronDown size={13} className="ml-0.5 text-muted" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-semibold text-ink">
+                  {profileByRole[state.role].name}
+                </span>
+                <span className="text-[11px] text-muted">{state.role}</span>
+              </div>
+              <ChevronDown size={14} className="ml-1 text-stone-400" />
             </div>
             <select
               value={state.role}

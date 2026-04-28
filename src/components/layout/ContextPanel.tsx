@@ -1,5 +1,6 @@
-import { Plus, Search, X } from "lucide-react";
-import { useState } from "react";
+import { Filter, Plus, Search, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { agents, workspaces } from "../../data/mockData";
 import type { AppState } from "../../App";
@@ -18,6 +19,109 @@ const agentSubNav: SubNavItem[] = [
   { label: "Evaluate", to: "/evaluate",                  isActive: (p, s) => p === "/evaluate" && !s.includes("test") },
 ];
 
+type AgentQuick = "all" | "assigned" | "recent";
+type WorkspaceQuick = "all" | "managed" | "recent";
+
+/* ─── Shared small components ─────────────────────────────── */
+
+function Chip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded px-2 py-1 text-[10px] font-medium transition ${
+        active
+          ? "bg-white/15 text-stone-100"
+          : "text-stone-500 hover:bg-white/[0.05] hover:text-stone-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PopoverSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-stone-500">
+        {title}
+      </div>
+      <div className="flex flex-col">{children}</div>
+    </div>
+  );
+}
+
+function CheckOption({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition ${
+        selected
+          ? "text-stone-100"
+          : "text-stone-400 hover:bg-white/[0.05] hover:text-stone-200"
+      }`}
+    >
+      <span
+        className={`h-3 w-3 shrink-0 rounded-sm border transition ${
+          selected ? "border-stone-300 bg-stone-300" : "border-stone-600"
+        }`}
+      />
+      {label}
+    </button>
+  );
+}
+
+function RadioOption({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition ${
+        selected
+          ? "text-stone-100"
+          : "text-stone-400 hover:bg-white/[0.05] hover:text-stone-200"
+      }`}
+    >
+      <span
+        className={`h-3 w-3 shrink-0 rounded-full border transition ${
+          selected ? "border-stone-300 bg-stone-300" : "border-stone-600"
+        }`}
+      />
+      {label}
+    </button>
+  );
+}
+
+/* ─── Context router ───────────────────────────────────────── */
+
 export function ContextPanel({ state }: Props) {
   const location = useLocation();
 
@@ -33,38 +137,84 @@ export function ContextPanel({ state }: Props) {
   return null;
 }
 
+/* ─── Agent panel ──────────────────────────────────────────── */
+
 function AgentPanel({ state }: Props) {
   const [query, setQuery] = useState("");
+  const [quick, setQuick] = useState<AgentQuick>("all");
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterLifecycle, setFilterLifecycle] = useState<string[]>([]);
+  const [filterWorkspace, setFilterWorkspace] = useState<string[]>([]);
+  const [filterAttention, setFilterAttention] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("Recently updated");
+  const filterRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   const wsMap = Object.fromEntries(workspaces.map((w) => [w.id, w.name]));
 
-  const filtered = agents.filter(
-    (a) =>
-      a.name.toLowerCase().includes(query.toLowerCase()) ||
-      wsMap[a.workspaceId]?.toLowerCase().includes(query.toLowerCase()),
-  );
+  useEffect(() => {
+    if (!showFilter) return;
+    function onMouseDown(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilter(false);
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [showFilter]);
+
+  const filtered = agents.filter((a) => {
+    const q = query.toLowerCase();
+    if (q && !a.name.toLowerCase().includes(q) && !wsMap[a.workspaceId]?.toLowerCase().includes(q)) return false;
+    if (filterLifecycle.length > 0 && !filterLifecycle.includes(a.status)) return false;
+    if (filterWorkspace.length > 0 && !filterWorkspace.includes(wsMap[a.workspaceId])) return false;
+    return true;
+  });
+
+  const hasAdvanced = filterLifecycle.length > 0 || filterWorkspace.length > 0 || filterAttention.length > 0;
+
+  function toggle(arr: string[], val: string, set: (v: string[]) => void) {
+    set(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  }
 
   return (
-    <div className="flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
+    <div className="relative flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
       {/* Header */}
       <div className="shrink-0 border-b border-white/[0.07] p-3">
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
             Agent
           </span>
-          <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-            <Plus size={11} />
-            New
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowFilter((v) => !v)}
+              title="Filter agents"
+              className={`flex items-center gap-1 rounded px-1.5 py-1 text-[10px] transition ${
+                hasAdvanced || showFilter
+                  ? "bg-white/10 text-stone-200"
+                  : "text-stone-400 hover:bg-white/10 hover:text-stone-200"
+              }`}
+            >
+              <Filter size={10} />
+              {hasAdvanced && (
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              )}
+            </button>
+            <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
+              <Plus size={11} />
+              New
+            </button>
+          </div>
         </div>
+
+        {/* Search */}
         <div className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
           <Search size={11} className="shrink-0 text-stone-500" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search agents…"
+            placeholder="Search agents..."
             className="min-w-0 flex-1 bg-transparent text-xs text-stone-300 placeholder-stone-500 outline-none"
           />
           {query && (
@@ -73,7 +223,96 @@ function AgentPanel({ state }: Props) {
             </button>
           )}
         </div>
+
+        {/* Quick filter chips */}
+        <div className="mt-2 flex gap-0.5">
+          <Chip label="All"            active={quick === "all"}      onClick={() => setQuick("all")} />
+          <Chip label="Assigned to me" active={quick === "assigned"}  onClick={() => setQuick("assigned")} />
+          <Chip label="Recent"         active={quick === "recent"}   onClick={() => setQuick("recent")} />
+        </div>
       </div>
+
+      {/* Advanced filter popover */}
+      {showFilter && (
+        <div
+          ref={filterRef}
+          className="absolute left-full top-0 z-50 ml-1 w-56 rounded-lg border border-white/10 bg-[#1c1c24] p-3 shadow-2xl"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
+              Filter Agents
+            </span>
+            <button onClick={() => setShowFilter(false)}>
+              <X size={11} className="text-stone-500 hover:text-stone-300" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3.5">
+            <PopoverSection title="Scope">
+              {["All agents", "Assigned to me", "Recently viewed"].map((opt) => (
+                <RadioOption key={opt} label={opt} selected={false} onClick={() => {}} />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Workspace">
+              {workspaces.map((ws) => (
+                <CheckOption
+                  key={ws.id}
+                  label={ws.name}
+                  selected={filterWorkspace.includes(ws.name)}
+                  onClick={() => toggle(filterWorkspace, ws.name, setFilterWorkspace)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Lifecycle">
+              {["Draft", "Testing", "Live", "Paused"].map((opt) => (
+                <CheckOption
+                  key={opt}
+                  label={opt}
+                  selected={filterLifecycle.includes(opt)}
+                  onClick={() => toggle(filterLifecycle, opt, setFilterLifecycle)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Needs attention">
+              {["Failed tests", "Approval pending", "Production risk"].map((opt) => (
+                <CheckOption
+                  key={opt}
+                  label={opt}
+                  selected={filterAttention.includes(opt)}
+                  onClick={() => toggle(filterAttention, opt, setFilterAttention)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Sort by">
+              {["Recently updated", "Name A–Z", "Risk first"].map((opt) => (
+                <RadioOption
+                  key={opt}
+                  label={opt}
+                  selected={sortBy === opt}
+                  onClick={() => setSortBy(opt)}
+                />
+              ))}
+            </PopoverSection>
+          </div>
+
+          {hasAdvanced && (
+            <button
+              onClick={() => {
+                setFilterLifecycle([]);
+                setFilterWorkspace([]);
+                setFilterAttention([]);
+              }}
+              className="mt-3 w-full rounded px-2 py-1.5 text-[11px] text-stone-500 transition hover:text-stone-300"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Agent list */}
       <div className="compact-scrollbar flex-1 overflow-y-auto py-1">
@@ -81,18 +320,17 @@ function AgentPanel({ state }: Props) {
           const isSelected = agent.id === state.agent.id;
           return (
             <div key={agent.id}>
-              {/* Agent row */}
               <button
                 onClick={() => {
                   state.setAgentId(agent.id);
                   navigate("/agent");
                 }}
-                className={`flex w-full items-start gap-2.5 rounded-md mx-1.5 px-2.5 py-2 text-left transition ${
+                style={{ width: "calc(100% - 12px)" }}
+                className={`mx-1.5 flex items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition ${
                   isSelected
-                    ? "ring-1 ring-accent/60 bg-accent/[0.08] text-white"
+                    ? "bg-accent/[0.08] text-white ring-1 ring-accent/60"
                     : "text-stone-300 hover:bg-white/[0.05] hover:text-white"
                 }`}
-                style={{ width: "calc(100% - 12px)" }}
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs font-medium">{agent.name}</div>
@@ -104,7 +342,7 @@ function AgentPanel({ state }: Props) {
 
               {/* Sub-nav — only for selected agent */}
               {isSelected && (
-                <div className="ml-4 mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-accent/30 pl-3">
+                <div className="mb-1 ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-accent/30 pl-3">
                   {agentSubNav.map((item) => {
                     const active = item.isActive(location.pathname, location.search);
                     return (
@@ -134,33 +372,80 @@ function AgentPanel({ state }: Props) {
   );
 }
 
+/* ─── Workspace panel ──────────────────────────────────────── */
+
 function WorkspacePanel({ state }: Props) {
   const [query, setQuery] = useState("");
+  const [quick, setQuick] = useState<WorkspaceQuick>("all");
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterRegion, setFilterRegion] = useState<string[]>([]);
+  const [filterState, setFilterState] = useState("");
+  const [filterAttention, setFilterAttention] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("Recently updated");
+  const filterRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const filtered = workspaces.filter((w) =>
-    w.name.toLowerCase().includes(query.toLowerCase()),
-  );
+  useEffect(() => {
+    if (!showFilter) return;
+    function onMouseDown(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilter(false);
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [showFilter]);
+
+  const filtered = workspaces.filter((w) => {
+    const q = query.toLowerCase();
+    if (q && !w.name.toLowerCase().includes(q)) return false;
+    if (filterRegion.length > 0 && !filterRegion.includes(w.region)) return false;
+    return true;
+  });
+
+  const hasAdvanced = filterRegion.length > 0 || !!filterState || filterAttention.length > 0;
+
+  function toggle(arr: string[], val: string, set: (v: string[]) => void) {
+    set(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  }
 
   return (
-    <div className="flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
+    <div className="relative flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
       {/* Header */}
       <div className="shrink-0 border-b border-white/[0.07] p-3">
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
             Workspace
           </span>
-          <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-            <Plus size={11} />
-            New
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowFilter((v) => !v)}
+              title="Filter workspaces"
+              className={`flex items-center gap-1 rounded px-1.5 py-1 text-[10px] transition ${
+                hasAdvanced || showFilter
+                  ? "bg-white/10 text-stone-200"
+                  : "text-stone-400 hover:bg-white/10 hover:text-stone-200"
+              }`}
+            >
+              <Filter size={10} />
+              {hasAdvanced && (
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              )}
+            </button>
+            <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
+              <Plus size={11} />
+              New
+            </button>
+          </div>
         </div>
+
+        {/* Search */}
         <div className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
           <Search size={11} className="shrink-0 text-stone-500" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search workspaces…"
+            placeholder="Search workspaces..."
             className="min-w-0 flex-1 bg-transparent text-xs text-stone-300 placeholder-stone-500 outline-none"
           />
           {query && (
@@ -169,9 +454,98 @@ function WorkspacePanel({ state }: Props) {
             </button>
           )}
         </div>
+
+        {/* Quick filter chips */}
+        <div className="mt-2 flex gap-0.5">
+          <Chip label="All"           active={quick === "all"}     onClick={() => setQuick("all")} />
+          <Chip label="Managed by me" active={quick === "managed"} onClick={() => setQuick("managed")} />
+          <Chip label="Recent"        active={quick === "recent"}  onClick={() => setQuick("recent")} />
+        </div>
       </div>
 
-      {/* List */}
+      {/* Advanced filter popover */}
+      {showFilter && (
+        <div
+          ref={filterRef}
+          className="absolute left-full top-0 z-50 ml-1 w-56 rounded-lg border border-white/10 bg-[#1c1c24] p-3 shadow-2xl"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
+              Filter Workspaces
+            </span>
+            <button onClick={() => setShowFilter(false)}>
+              <X size={11} className="text-stone-500 hover:text-stone-300" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3.5">
+            <PopoverSection title="Scope">
+              {["All workspaces", "Managed by me", "Recently viewed"].map((opt) => (
+                <RadioOption key={opt} label={opt} selected={false} onClick={() => {}} />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Region">
+              {["KR", "APAC", "Global"].map((opt) => (
+                <CheckOption
+                  key={opt}
+                  label={opt}
+                  selected={filterRegion.includes(opt)}
+                  onClick={() => toggle(filterRegion, opt, setFilterRegion)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Workspace state">
+              {["Active", "Archived"].map((opt) => (
+                <RadioOption
+                  key={opt}
+                  label={opt}
+                  selected={filterState === opt}
+                  onClick={() => setFilterState(filterState === opt ? "" : opt)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Needs attention">
+              {["Has failed tests", "Has pending approvals", "Has production risks"].map((opt) => (
+                <CheckOption
+                  key={opt}
+                  label={opt}
+                  selected={filterAttention.includes(opt)}
+                  onClick={() => toggle(filterAttention, opt, setFilterAttention)}
+                />
+              ))}
+            </PopoverSection>
+
+            <PopoverSection title="Sort by">
+              {["Recently updated", "Name A–Z", "Most agents", "Issues first"].map((opt) => (
+                <RadioOption
+                  key={opt}
+                  label={opt}
+                  selected={sortBy === opt}
+                  onClick={() => setSortBy(opt)}
+                />
+              ))}
+            </PopoverSection>
+          </div>
+
+          {hasAdvanced && (
+            <button
+              onClick={() => {
+                setFilterRegion([]);
+                setFilterState("");
+                setFilterAttention([]);
+              }}
+              className="mt-3 w-full rounded px-2 py-1.5 text-[11px] text-stone-500 transition hover:text-stone-300"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Workspace list */}
       <div className="compact-scrollbar flex-1 overflow-y-auto py-1">
         {filtered.map((ws) => {
           const active = ws.id === state.workspace.id;
@@ -182,7 +556,7 @@ function WorkspacePanel({ state }: Props) {
                 state.setWorkspaceId(ws.id);
                 navigate("/workspace");
               }}
-              className={`flex w-full items-start gap-2.5 px-3 py-2 text-left transition ${
+              className={`flex w-full items-start px-3 py-2 text-left transition ${
                 active
                   ? "bg-white/[0.08] text-white"
                   : "text-stone-300 hover:bg-white/[0.05] hover:text-white"

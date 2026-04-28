@@ -25,12 +25,12 @@ select {
 }
 
 .compact-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .compact-scrollbar::-webkit-scrollbar-thumb {
-  background: #d5cbbd;
+  background: #EEE9DE;
   border-radius: 999px;
 }
 
