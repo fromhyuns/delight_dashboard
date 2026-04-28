@@ -16,7 +16,7 @@ export function AppShell({ state, children }: AppShellProps) {
       <div className="flex h-[calc(100vh-3.5rem)]">
         <LeftRail />
         <ContextPanel state={state} />
-        <main className="flex-1 overflow-hidden">
+        <main className={`compact-scrollbar flex-1 overflow-auto${state.environment === "Production" ? " prod-main" : ""}`}>
           <div className="mx-auto max-w-[1440px] space-y-5 px-6 py-5">
             {children}
           </div>

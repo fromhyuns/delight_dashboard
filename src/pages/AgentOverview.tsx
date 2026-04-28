@@ -164,16 +164,11 @@ export function AgentOverview({ app }: PageProps) {
               <CreditCard size={21} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-semibold text-ink">Payment Issue Resolver</h1>
-                <span className="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
-                  Needs attention
+                <span className="rounded-md border border-line bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+                  {app.workspace.name}
                 </span>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                <span>My agent</span>
-                <span>Owner: Sora Kim</span>
-                <span>Last edited: 31 min ago</span>
               </div>
               <p className="mt-2 max-w-3xl text-sm text-muted">
                 Resolves payment failures, missing order cases, and refund handoff decisions across Development,

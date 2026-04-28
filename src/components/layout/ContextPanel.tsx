@@ -180,6 +180,8 @@ function AgentPanel({ state }: Props) {
 
   return (
     <div className="relative flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
+
+
       {/* Header */}
       <div className="shrink-0 border-b border-white/[0.07] p-3">
         <div className="mb-2.5 flex items-center justify-between">
@@ -556,18 +558,24 @@ function WorkspacePanel({ state }: Props) {
                 state.setWorkspaceId(ws.id);
                 navigate("/workspace");
               }}
-              className={`flex w-full items-start px-3 py-2 text-left transition ${
+              className={`relative flex w-full items-center gap-2 py-3 pl-4 pr-3 text-left transition ${
                 active
-                  ? "bg-white/[0.08] text-white"
+                  ? "text-white"
                   : "text-stone-300 hover:bg-white/[0.05] hover:text-white"
               }`}
             >
+              {active && (
+                <div className="absolute left-0 top-0 h-full w-0.5 rounded-r-full bg-accent" />
+              )}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium">{ws.name}</div>
-                <div className="text-[10px] text-stone-500">
-                  {ws.agents} agents · {ws.region}
-                </div>
+                <div className="truncate text-sm font-medium">{ws.name}</div>
+                <div className="text-[10px] text-stone-500">{ws.region}</div>
               </div>
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums ${
+                active ? "bg-white/10 text-stone-300" : "text-stone-600"
+              }`}>
+                {ws.agents}
+              </span>
             </button>
           );
         })}

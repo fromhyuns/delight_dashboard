@@ -1,5 +1,5 @@
 import { Bell, ChevronDown, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { agents, roles, workspaces } from "../../data/mockData";
 import type { AppState } from "../../App";
@@ -18,7 +18,6 @@ const environments: Environment[] = ["Development", "Staging", "Production"];
 
 
 const lockedEnvByRoute: Partial<Record<string, Environment>> = {
-  "/build/development":       "Development",
   "/build/production-safety": "Production",
   "/evaluate":                "Production",
 };
@@ -29,11 +28,20 @@ export function TopBar({ state }: TopBarProps) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const lockedEnv = lockedEnvByRoute[location.pathname];
+  const lockedEnv  = lockedEnvByRoute[location.pathname];
+  const prevEnvRef = useRef(state.environment);
+  const [prodGlowKey, setProdGlowKey] = useState(0);
 
   useEffect(() => {
     if (lockedEnv) state.setEnvironment(lockedEnv);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (state.environment === "Production" && prevEnvRef.current !== "Production") {
+      setProdGlowKey((k) => k + 1);
+    }
+    prevEnvRef.current = state.environment;
+  }, [state.environment]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -118,9 +126,10 @@ export function TopBar({ state }: TopBarProps) {
                 {environments.map((env) => {
                   const isActive = state.environment === env;
                   const isLocked = !!lockedEnv && lockedEnv !== env;
+                  const isProdActive = env === "Production" && isActive;
                   return (
                     <button
-                      key={env}
+                      key={isProdActive ? `prod-${prodGlowKey}` : env}
                       disabled={isLocked}
                       onClick={() => { if (!lockedEnv) state.setEnvironment(env); }}
                       className={`rounded px-2.5 py-1 text-xs font-medium transition ${
@@ -129,7 +138,7 @@ export function TopBar({ state }: TopBarProps) {
                           : isLocked
                           ? "cursor-not-allowed text-stone-300"
                           : "text-muted hover:text-ink"
-                      }`}
+                      } ${isProdActive ? "prod-tab-glow" : ""}`}
                     >
                       {env}
                     </button>
