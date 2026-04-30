@@ -13,7 +13,7 @@
 
 body {
   margin: 0;
-  min-width: 1180px;
+  min-width: 320px;
   min-height: 100vh;
   background: #f7f3eb;
 }
@@ -115,29 +115,6 @@ select {
 .env-card-3 .env-shine-wrap  { animation: env-shine-show  1.2s linear      1 2.2s forwards; }
 .env-card-3 .env-shine-stripe{ animation: env-shine-slide 1.2s linear      1 2.2s both;     }
 
-/* ── Production main area inner shadow glow ─────────────── */
-@keyframes prod-area-pulse {
-  0%, 100% { opacity: 0.65; }
-  50%       { opacity: 1;    }
-}
-
-.prod-main {
-  position: relative;
-  isolation: isolate;
-}
-
-.prod-main::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 120% 40% at 50% -5%, rgba(239,68,68,0.13) 0%, transparent 65%),
-    radial-gradient(ellipse 25% 80% at 0% 35%,   rgba(239,68,68,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 25% 80% at 100% 35%, rgba(239,68,68,0.07) 0%, transparent 60%);
-  animation: prod-area-pulse 3.5s ease-in-out infinite;
-}
 
 /* ── Production card glow ───────────────────────────────── */
 @keyframes prod-card-glow {

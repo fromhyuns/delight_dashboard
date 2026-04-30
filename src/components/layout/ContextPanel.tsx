@@ -9,13 +9,13 @@ type Props = { state: AppState };
 
 type SubNavItem = {
   label: string;
-  to: string;
+  to?: string;
   isActive: (pathname: string, search: string) => boolean;
 };
 
 const agentSubNav: SubNavItem[] = [
   { label: "Build",    to: "/build/development",         isActive: (p)    => p.startsWith("/build") },
-  { label: "Test",     to: "/evaluate?tab=test-results", isActive: (p, s) => p === "/evaluate" && s.includes("test") },
+  { label: "Test",                                   isActive: (p, s) => p === "/evaluate" && s.includes("test") },
   { label: "Evaluate", to: "/evaluate",                  isActive: (p, s) => p === "/evaluate" && !s.includes("test") },
 ];
 
@@ -337,7 +337,7 @@ function AgentPanel({ state }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs font-medium">{agent.name}</div>
                   <div className="truncate text-[10px] text-stone-500">
-                    {wsMap[agent.workspaceId]}
+                    #{wsMap[agent.workspaceId]?.toUpperCase()}
                   </div>
                 </div>
               </button>
@@ -347,15 +347,25 @@ function AgentPanel({ state }: Props) {
                 <div className="mb-1 ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-accent/30 pl-3">
                   {agentSubNav.map((item) => {
                     const active = item.isActive(location.pathname, location.search);
+                    const className = `rounded px-2 py-1.5 text-xs transition ${
+                      active
+                        ? "font-medium text-white"
+                        : "text-stone-400 hover:bg-white/[0.04] hover:text-stone-200"
+                    }`;
+
+                    if (!item.to) {
+                      return (
+                        <span key={item.label} className={className}>
+                          {item.label}
+                        </span>
+                      );
+                    }
+
                     return (
                       <Link
                         key={item.label}
                         to={item.to}
-                        className={`rounded px-2 py-1.5 text-xs transition ${
-                          active
-                            ? "font-medium text-white"
-                            : "text-stone-400 hover:bg-white/[0.04] hover:text-stone-200"
-                        }`}
+                        className={className}
                       >
                         {item.label}
                       </Link>
@@ -568,7 +578,7 @@ function WorkspacePanel({ state }: Props) {
                 <div className="absolute left-0 top-0 h-full w-0.5 rounded-r-full bg-accent" />
               )}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{ws.name}</div>
+                <div className="truncate text-sm font-medium uppercase tracking-wide">#{ws.name}</div>
                 <div className="text-[10px] text-stone-500">{ws.region}</div>
               </div>
               <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums ${

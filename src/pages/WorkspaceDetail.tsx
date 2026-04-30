@@ -181,7 +181,7 @@ function roleCopy(role: AppState["role"]) {
       primaryLabel: "New Agent",
       primaryDisabled: false,
       context: "Can add agents, manage workspace settings, and run staging tests.",
-      tableAction: (a: WorkspaceAgent) => (a.status === "Stable" ? "Run Test" : "Open Agent"),
+      tableAction: (a: WorkspaceAgent) => (a.status === "Stable" ? "Execute Preview" : "Open Agent"),
     };
   }
   if (role === "Org Admin") {
@@ -197,7 +197,7 @@ function roleCopy(role: AppState["role"]) {
     settingsLabel: "View Settings",
     primaryLabel: "New Agent",
     primaryDisabled: true,
-    context: "Can open assigned agents and evaluate changes. New agent creation requires workspace admin access.",
+    context: "Can open Relevant Items and evaluate changes. New agent creation requires workspace admin access.",
     tableAction: (a: WorkspaceAgent) => (a.assigned ? "Open Agent" : "View Only"),
   };
 }
@@ -531,7 +531,7 @@ export function WorkspaceDetail({ app }: PageProps) {
                           variant={locked ? "quiet" : "secondary"}
                           className="h-7 px-2 text-xs"
                           disabled={locked}
-                          title={locked ? "Only assigned agents can be opened by this role." : undefined}
+                          title={locked ? "Only Relevant Items can be opened by this role." : undefined}
                         >
                           {locked ? "View Only" : permissions.tableAction(a)}
                         </ActionButton>

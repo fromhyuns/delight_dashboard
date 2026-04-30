@@ -1,4 +1,5 @@
 import { BarChart3, Download, FileText, GitCompareArrows, RotateCcw, Wrench } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { AppState } from "../App";
 import { ActionButton } from "../components/ui/ActionButton";
 import { Badge } from "../components/ui/Badge";
@@ -55,6 +56,22 @@ const trendBars = [
   { label: "Sun", value: 91 },
 ];
 
+const trendDetails = [
+  { delta: "-1.2pt vs Tue", volume: "2,540 conv", escalation: "7.8%", issue: "Missing order after payment" },
+  { delta: "+3.0pt vs Mon", volume: "2,720 conv", escalation: "6.9%", issue: "Payment status mismatch" },
+  { delta: "-2.0pt vs Tue", volume: "2,680 conv", escalation: "7.5%", issue: "Refund handoff unclear" },
+  { delta: "+5.0pt vs Wed", volume: "2,910 conv", escalation: "6.2%", issue: "Card verification retry" },
+  { delta: "-2.0pt vs Thu", volume: "2,860 conv", escalation: "6.8%", issue: "Payment status mismatch" },
+  { delta: "-2.0pt vs Fri", volume: "2,610 conv", escalation: "7.3%", issue: "Missing order after payment" },
+  { delta: "+1.0pt vs Sat", volume: "2,700 conv", escalation: "7.0%", issue: "Refund handoff unclear" },
+];
+
+const trendInsights = [
+  { label: "Top driver", value: "Payment status mismatch", detail: "+1.1pt escalation impact" },
+  { label: "Fastest recovery", value: "Refund handoff", detail: "Median time improved by 14s" },
+  { label: "Watch item", value: "Missing order after payment", detail: "41% of open high-risk conversations" },
+];
+
 function contentForRole(role: AppState["role"]): ViewContent {
   if (role === "Org Admin") {
     return {
@@ -94,7 +111,7 @@ function contentForRole(role: AppState["role"]): ViewContent {
       description: "Test outcomes, quality score, and failing cases for improving this agent before promotion.",
       primaryCta: "View Test Results",
       secondaryCta: "Open Build",
-      tertiaryCta: "Re-run Test",
+      tertiaryCta: "Re-Execute Preview",
       overviewTitle: "Quality Overview",
       tableTitle: "Top Failing Test Cases",
       sideTitle: "Recent Test Runs",
@@ -106,13 +123,13 @@ function contentForRole(role: AppState["role"]): ViewContent {
       ],
       rows: [
         { id: "br-1", primary: "Missing order after payment", secondary: "Payment lookup", metric: "2 failures", status: "Failed", action: "View Test Results" },
-        { id: "br-2", primary: "Duplicate payment handoff", secondary: "Escalation", metric: "1 warning", status: "Attention", action: "Re-run Test" },
+        { id: "br-2", primary: "Duplicate payment handoff", secondary: "Escalation", metric: "1 warning", status: "Attention", action: "Re-Execute Preview" },
         { id: "br-3", primary: "Refund eligibility summary", secondary: "Refund Process", metric: "Passed", status: "Stable", action: "Open Build" },
         { id: "br-4", primary: "Card verification retry", secondary: "Payment Method Update", metric: "Passed", status: "Stable", action: "Open Build" },
       ],
       sideRows: [
         { id: "bt-1", primary: "Staging readiness run", secondary: "12 min ago", metric: "91.6%", status: "Attention", action: "View Test Results" },
-        { id: "bt-2", primary: "Development smoke test", secondary: "31 min ago", metric: "98.4%", status: "Stable", action: "Re-run Test" },
+        { id: "bt-2", primary: "Development smoke test", secondary: "31 min ago", metric: "98.4%", status: "Stable", action: "Re-Execute Preview" },
         { id: "bt-3", primary: "Payment policy suite", secondary: "2 hrs ago", metric: "96.0%", status: "Stable", action: "View Test Results" },
       ],
     };
@@ -149,14 +166,122 @@ function contentForRole(role: AppState["role"]): ViewContent {
 }
 
 function SimpleTrendChart() {
+  const [animateLine, setAnimateLine] = useState(false);
+  const [activePoint, setActivePoint] = useState<number | null>(null);
+  const maxValue = Math.max(...trendBars.map((bar) => bar.value));
+  const minValue = Math.min(...trendBars.map((bar) => bar.value));
+  const chartMin = minValue - 3;
+  const chartMax = maxValue + 3;
+  const threshold = 92;
+  const chartWidth = 420;
+  const chartHeight = 120;
+  const points = trendBars.map((bar, idx) => {
+    const x = ((idx + 0.5) / trendBars.length) * chartWidth;
+    const y = ((chartMax - bar.value) / (chartMax - chartMin)) * chartHeight;
+    return { ...bar, x, y, detail: trendDetails[idx] };
+  });
+  const polylinePoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const thresholdY = ((chartMax - threshold) / (chartMax - chartMin)) * chartHeight;
+  const activePointData = activePoint !== null ? points[activePoint] : null;
+  const activeLeftPercent = activePoint !== null ? ((activePoint + 0.5) / trendBars.length) * 100 : 0;
+  const activeTopPx = activePointData ? (activePointData.y / chartHeight) * 128 - 14 : 0;
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      setAnimateLine(true);
+      return;
+    }
+    const rafId = window.requestAnimationFrame(() => setAnimateLine(true));
+    return () => window.cancelAnimationFrame(rafId);
+  }, []);
+
   return (
-    <div className="flex h-32 items-end gap-2 rounded-md border border-line bg-stone-50 px-3 py-3">
-      {trendBars.map((bar) => (
-        <div key={bar.label} className="flex flex-1 flex-col items-center gap-2">
-          <div className="w-full rounded-t bg-accent/70" style={{ height: `${bar.value - 35}px` }} />
-          <div className="text-[11px] text-muted">{bar.label}</div>
+    <div
+      className="relative overflow-visible rounded-md border border-line bg-stone-50 px-3 py-3"
+      onMouseLeave={() => setActivePoint(null)}
+    >
+      <div className="relative">
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" className="h-32 w-full">
+          <line
+            x1={0}
+            y1={thresholdY}
+            x2={chartWidth}
+            y2={thresholdY}
+            stroke="#d6d3d1"
+            strokeDasharray="4 4"
+            strokeWidth="1"
+          />
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke="#8b5cf6"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={1}
+            style={{
+              opacity: animateLine ? 1 : 0.3,
+              strokeDasharray: 1,
+              strokeDashoffset: animateLine ? 0 : 1,
+              transition: "stroke-dashoffset 900ms ease-out, opacity 400ms ease-out",
+            }}
+          />
+          {points.map((point, idx) => (
+            <g key={point.label}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={activePoint === idx ? 4.5 : 3.5}
+                fill={activePoint === idx ? "#6d28d9" : "#8b5cf6"}
+                className="cursor-pointer transition-all"
+                style={{
+                  opacity: animateLine ? 1 : 0,
+                  transitionDelay: `${120 + idx * 40}ms`,
+                }}
+                onMouseEnter={() => setActivePoint(idx)}
+                onClick={() => setActivePoint(idx)}
+              />
+            </g>
+          ))}
+        </svg>
+
+        <div className="mt-1 grid grid-cols-7 text-center">
+          {trendBars.map((bar, idx) => (
+            <button
+              key={bar.label}
+              onMouseEnter={() => setActivePoint(idx)}
+              onClick={() => setActivePoint(idx)}
+              className={`text-[11px] transition ${activePoint === idx ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
+            >
+              {bar.label}
+            </button>
+          ))}
         </div>
-      ))}
+
+        {activePoint !== null && (
+          <div
+            className="pointer-events-none absolute z-10 w-44 -translate-x-1/2 -translate-y-full rounded-md border border-white/80 bg-white/95 p-2 text-xs shadow-md backdrop-blur-md"
+            style={{
+              top: `${activeTopPx}px`,
+              left: `${activeLeftPercent}%`,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-stone-900">{trendBars[activePoint].label}</span>
+              <span className="font-semibold text-accent">{trendBars[activePoint].value}%</span>
+            </div>
+            <div className="mt-1 space-y-0.5 text-stone-700">
+              <div>{trendDetails[activePoint].delta}</div>
+              <div>Escalation {trendDetails[activePoint].escalation}</div>
+            </div>
+            <div
+              className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-white/80 bg-white/80 backdrop-blur-md"
+              aria-hidden
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -186,7 +311,7 @@ export function Evaluate({ app }: PageProps) {
             {content.secondaryCta}
           </ActionButton>
           <ActionButton variant="secondary">
-            {content.tertiaryCta === "Re-run Test" ? <RotateCcw size={16} /> : <GitCompareArrows size={16} />}
+            {content.tertiaryCta === "Re-Execute Preview" ? <RotateCcw size={16} /> : <GitCompareArrows size={16} />}
             {content.tertiaryCta}
           </ActionButton>
         </div>
@@ -214,7 +339,7 @@ export function Evaluate({ app }: PageProps) {
           </div>
 
           <div className="grid grid-cols-[0.95fr_1.05fr] gap-4">
-            <Card className="p-4">
+            <Card className="flex h-full flex-col p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-ink">{content.overviewTitle}</h2>
@@ -235,6 +360,20 @@ export function Evaluate({ app }: PageProps) {
                 <div className="rounded-md border border-line p-2">
                   <div className="text-xs text-muted">Open alerts</div>
                   <div className="font-semibold text-ink">3</div>
+                </div>
+              </div>
+              <div className="mt-3 rounded-md border border-line bg-stone-50/60 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Key Signals</div>
+                <div className="space-y-2.5">
+                  {trendInsights.map((item) => (
+                    <div key={item.label} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs text-muted">{item.label}</div>
+                        <div className="truncate text-sm font-medium text-ink">{item.value}</div>
+                      </div>
+                      <div className="shrink-0 text-xs text-muted">{item.detail}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </Card>

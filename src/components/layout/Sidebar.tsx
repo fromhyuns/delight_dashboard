@@ -199,9 +199,9 @@ export function Sidebar({ state, collapsed, onToggle }: SidebarProps) {
             <WorkflowNavIcon enabled={hasAgent} to="/build/development" active={buildActive} title="Build">
               <GitBranch size={17} />
             </WorkflowNavIcon>
-            <WorkflowNavIcon enabled={hasAgent} to="/evaluate?tab=test-results" active={testActive} title="Test">
+            <WorkflowStaticIcon enabled={hasAgent} active={testActive} title="Test">
               <ClipboardCheck size={17} />
-            </WorkflowNavIcon>
+            </WorkflowStaticIcon>
             <WorkflowNavIcon enabled={hasAgent} to="/evaluate" active={evaluateActive} title="Evaluate">
               <BarChart3 size={17} />
             </WorkflowNavIcon>
@@ -313,6 +313,24 @@ function WorkflowNavIcon({
     >
       {children}
     </Link>
+  );
+}
+
+function WorkflowStaticIcon({
+  enabled, active, title, children,
+}: {
+  enabled: boolean;
+  active: boolean;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`${navItemCollapsed} ${enabled ? (active ? workflowActiveClass : workflowInactiveClass) : disabledClass}`}
+      title={title}
+    >
+      {children}
+    </div>
   );
 }
 

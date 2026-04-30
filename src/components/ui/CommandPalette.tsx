@@ -47,7 +47,9 @@ export function CommandPalette({ state, onClose }: Props) {
         ...recentAgents.map((agent) => ({
           id: `recent-${agent.id}`,
           label: agent.name,
-          sublabel: workspaces.find((w) => w.id === agent.workspaceId)?.name,
+          sublabel: workspaces.find((w) => w.id === agent.workspaceId)?.name
+            ? `#${workspaces.find((w) => w.id === agent.workspaceId)!.name.toUpperCase()}`
+            : undefined,
           icon: <SquareStack size={15} />,
           onSelect: () => {
             state.setWorkspaceId(agent.workspaceId);
@@ -59,7 +61,7 @@ export function CommandPalette({ state, onClose }: Props) {
           ? [
               {
                 id: `recent-ws-${recentWs.id}`,
-                label: recentWs.name,
+                label: `#${recentWs.name.toUpperCase()}`,
                 sublabel: "Workspace",
                 icon: <Boxes size={15} />,
                 onSelect: () => {
@@ -79,7 +81,9 @@ export function CommandPalette({ state, onClose }: Props) {
       .map((agent) => ({
         id: `agent-${agent.id}`,
         label: agent.name,
-        sublabel: workspaces.find((w) => w.id === agent.workspaceId)?.name,
+        sublabel: workspaces.find((w) => w.id === agent.workspaceId)?.name
+          ? `#${workspaces.find((w) => w.id === agent.workspaceId)!.name.toUpperCase()}`
+          : undefined,
         icon: <SquareStack size={15} />,
         onSelect: () => {
           state.setWorkspaceId(agent.workspaceId);
@@ -94,7 +98,7 @@ export function CommandPalette({ state, onClose }: Props) {
       .slice(0, 4)
       .map((ws) => ({
         id: `ws-${ws.id}`,
-        label: ws.name,
+        label: `#${ws.name.toUpperCase()}`,
         sublabel: `${ws.agents} agents · ${ws.region}`,
         icon: <Boxes size={15} />,
         onSelect: () => {
@@ -114,8 +118,8 @@ export function CommandPalette({ state, onClose }: Props) {
       },
       {
         id: "action-test",
-        label: "Run Test",
-        sublabel: "Run test suite for current agent",
+        label: "Execute Preview",
+        sublabel: "Execute Preview suite for current agent",
         icon: <TestTube2 size={15} />,
         path: "/evaluate?tab=test-results",
       },

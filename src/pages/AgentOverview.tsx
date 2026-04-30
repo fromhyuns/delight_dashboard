@@ -1,13 +1,13 @@
 import {
+  Bot,
   ChevronRight,
   Code2,
-  CreditCard,
+  Filter,
   Layers,
   LayoutGrid,
   MoreHorizontal,
   RefreshCw,
   Rocket,
-  TestTube2,
   TriangleAlert,
   Wrench,
 } from "lucide-react";
@@ -22,6 +22,26 @@ type PageProps = {
 };
 
 type EnvStatus = "Stable" | "Attention" | "At Risk";
+
+type Issue = { id: string; title: string; description: string };
+
+const issues: Issue[] = [
+  {
+    id: "iss-1",
+    title: "Missing order after payment",
+    description: "Not consistently matching payment confirmations to newly created order IDs. Isolated to 2 staging cases and one production risk signal.",
+  },
+  {
+    id: "iss-2",
+    title: "Refund routing edge case",
+    description: "Agent fails to route partial refunds exceeding 30-day threshold to the manual review queue. Affects 3 production conversations this week.",
+  },
+  {
+    id: "iss-3",
+    title: "Duplicate confirmation response",
+    description: "Payment confirmation message sent twice when webhook retries occur within 5 seconds. Low frequency but causes customer confusion.",
+  },
+];
 
 type ActivityRow = {
   id: string;
@@ -67,15 +87,6 @@ const activityRows: ActivityRow[] = [
   },
 ];
 
-function roleActions(role: AppState["role"]) {
-  if (role === "Workspace Admin") {
-    return { primary: "Review Failed Tests", secondary: "View Details" };
-  }
-  if (role === "Org Admin") {
-    return { primary: "Review Production Risk", secondary: "View Details" };
-  }
-  return { primary: "Review Test", secondary: "Continue Build" };
-}
 
 function EnvStatusBadge({ status }: { status: EnvStatus }) {
   const map: Record<EnvStatus, { dot: string; text: string; border: string; bg: string; label: string }> = {
@@ -103,6 +114,7 @@ const envVariantStyles: Record<EnvVariant, { cardBg: string; border: string; ico
 function EnvCard({
   icon,
   name,
+  label,
   status,
   metric,
   variant,
@@ -110,6 +122,7 @@ function EnvCard({
 }: {
   icon: ReactNode;
   name: string;
+  label: string;
   status: EnvStatus;
   metric: string;
   variant: EnvVariant;
@@ -125,7 +138,7 @@ function EnvCard({
             {icon}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Environment</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">{label}</div>
             <div className="mt-0.5 text-sm font-semibold text-ink">{name}</div>
           </div>
           <EnvStatusBadge status={status} />
@@ -146,8 +159,8 @@ function EnvCard({
 }
 
 export function AgentOverview({ app }: PageProps) {
-  const actions = roleActions(app.role);
   const [pipelineKey, setPipelineKey] = useState(app.agent.id);
+  const [issueIndex, setIssueIndex] = useState(0);
 
   useEffect(() => {
     setPipelineKey(app.agent.id);
@@ -160,14 +173,14 @@ export function AgentOverview({ app }: PageProps) {
         {/* Agent header */}
         <div className="flex items-start justify-between gap-5 p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line bg-stone-50 text-accent">
-              <CreditCard size={21} />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 text-white shadow-sm">
+              <Bot size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-semibold text-ink">Payment Issue Resolver</h1>
                 <span className="rounded-md border border-line bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
-                  {app.workspace.name}
+                  #{app.workspace.name.toUpperCase()}
                 </span>
               </div>
               <p className="mt-2 max-w-3xl text-sm text-muted">
@@ -177,13 +190,9 @@ export function AgentOverview({ app }: PageProps) {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <ActionButton variant="secondary">
+            <ActionButton variant="primary">
               <Wrench size={16} />
               Open Build
-            </ActionButton>
-            <ActionButton variant="primary">
-              <TestTube2 size={16} />
-              Run Test
             </ActionButton>
             <button
               aria-label="More agent actions"
@@ -200,6 +209,7 @@ export function AgentOverview({ app }: PageProps) {
             <EnvCard
               icon={<Code2 size={16} />}
               name="Development"
+              label="v2.5.0-dev"
               status="Stable"
               metric="Success Rate 98.4%"
               variant="dev"
@@ -211,6 +221,7 @@ export function AgentOverview({ app }: PageProps) {
             <EnvCard
               icon={<Layers size={16} />}
               name="Staging"
+              label="v2.5.0 · candidate"
               status="Attention"
               metric="2 failed cases"
               variant="staging"
@@ -222,6 +233,7 @@ export function AgentOverview({ app }: PageProps) {
             <EnvCard
               icon={<Rocket size={16} />}
               name="Production"
+              label="v2.4.1 · live"
               status="At Risk"
               metric="Error rate 3.2%"
               variant="prod"
@@ -230,40 +242,64 @@ export function AgentOverview({ app }: PageProps) {
           </div>
         </div>
 
-        {/* Issue + recommended action */}
-        <div className="flex items-start justify-between gap-8 border-t border-line px-5 py-4">
+        {/* Issue paginated */}
+        <div className="flex items-center gap-6 border-t border-line px-5 py-4">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Issue</div>
-            <div className="mt-1 text-sm font-semibold text-ink">Missing order after payment</div>
-            <p className="mt-1 text-xs leading-5 text-muted">
-              Not consistently matching payment confirmations to newly created order IDs. Isolated to 2 staging cases and one production risk signal.
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Recommended Action</div>
-            <div className="mt-2 flex gap-2">
-              <ActionButton variant="primary">{actions.primary}</ActionButton>
-              <ActionButton variant="secondary">{actions.secondary}</ActionButton>
+            <div className="mt-1 text-sm font-semibold text-ink">{issues[issueIndex].title}</div>
+            <p className="mt-1 text-xs leading-5 text-muted">{issues[issueIndex].description}</p>
+            <div className="mt-2 flex gap-1.5">
+              {issues.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIssueIndex(i)}
+                  className={`rounded-full transition-all duration-200 ${
+                    i === issueIndex
+                      ? "h-1.5 w-3.5 bg-stone-300"
+                      : "h-1.5 w-1.5 bg-stone-200 hover:bg-stone-300"
+                  }`}
+                />
+              ))}
             </div>
           </div>
+          <ActionButton variant="secondary" className="shrink-0">View detail</ActionButton>
         </div>
       </Card>
 
       {/* ── Secondary: Metrics ───────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-3">
-        <MetricCard label="Conversations" value="18,420" detail="Production · last 7 days" />
-        <MetricCard label="Success rate" value="94.8%" detail="Down 1.6 pts from baseline" />
-        <MetricCard label="Resolution time" value="1m 42s" detail="Median completed case" />
-        <MetricCard label="Escalation rate" value="7.4%" detail="Up 0.9 pts this week" />
+        <MetricCard
+          label="Conversations"
+          value="18,420"
+          trend={{ delta: "+8.1% vs last week", positive: true }}
+          detail="Production · last 7 days"
+        />
+        <MetricCard
+          label="Success rate"
+          value="94.8%"
+          trend={{ delta: "−1.6 pts · short of goal", positive: false }}
+        />
+        <MetricCard
+          label="Resolution time"
+          value="1m 42s"
+          trend={{ delta: "+4s · still on track", positive: false }}
+        />
+        <MetricCard
+          label="Escalation rate"
+          value="7.4%"
+          trend={{ delta: "+0.9 pts · above threshold", positive: false }}
+        />
       </div>
 
       {/* ── Secondary: Activity ──────────────────────────────────────── */}
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-ink">Recent Alerts & Activity</h2>
+          <h2 className="text-base font-semibold text-ink">Recent Activity</h2>
           <div className="flex gap-2">
-            <ActionButton variant="secondary" className="h-7 px-3 text-xs">Filter</ActionButton>
-            <ActionButton variant="secondary" className="h-7 px-3 text-xs">Export</ActionButton>
+            <button className="flex h-9 w-9 items-center justify-center rounded-md border border-line bg-white text-muted hover:bg-stone-50 hover:text-ink">
+              <Filter size={13} />
+            </button>
+            <ActionButton variant="secondary">Export</ActionButton>
           </div>
         </div>
 
