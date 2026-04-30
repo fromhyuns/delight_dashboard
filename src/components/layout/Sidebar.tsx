@@ -30,15 +30,15 @@ const navItemCollapsed = "flex h-9 w-full items-center justify-center rounded-md
 const sectionButtonBase = "flex h-9 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition";
 
 // Workflow items — strong accent when active
-const workflowActiveClass = "bg-accent/20 text-white";
+const workflowActiveClass = "bg-white text-stone-900 [&_svg]:text-stone-900";
 const workflowInactiveClass = "text-stone-300 hover:bg-white/5 hover:text-white";
 
 // Overview item — subtle selection, no accent fill
-const overviewActiveClass = "bg-white/[0.08] text-stone-100";
+const overviewActiveClass = "bg-white text-stone-900 [&_svg]:text-stone-900";
 const overviewInactiveClass = "text-stone-400 hover:bg-white/5 hover:text-stone-200";
 
 // Global nav (Home/Workspaces) — same as workflow
-const globalActiveClass = "bg-accent/20 text-white";
+const globalActiveClass = "bg-white text-stone-900 [&_svg]:text-stone-900";
 const globalInactiveClass = "text-stone-300 hover:bg-white/5 hover:text-white";
 
 const disabledClass = "cursor-not-allowed text-stone-500 opacity-70";
@@ -335,7 +335,7 @@ function WorkflowStaticIcon({
 }
 
 function ExpandableNav({
-  label, icon, enabled, active, expanded, onToggle, children, defaultTo,
+  label, icon, enabled, active, expanded, onToggle, children,
 }: {
   label: string;
   icon: ReactNode;
@@ -344,7 +344,7 @@ function ExpandableNav({
   expanded: boolean;
   onToggle: () => void;
   children: ReactNode;
-  defaultTo: string;
+  defaultTo?: string;
 }) {
   if (!enabled) {
     return (
@@ -376,7 +376,7 @@ function SubLink({ to, active, children }: { to: string; active: boolean; childr
     <Link
       to={to}
       className={`flex h-8 items-center rounded-md px-3 text-sm transition ${
-        active ? "bg-accent/15 text-white" : "text-stone-400 hover:bg-white/5 hover:text-stone-200"
+        active ? "bg-white/10 text-white" : "text-stone-400 hover:bg-white/5 hover:text-stone-200"
       }`}
     >
       {children}

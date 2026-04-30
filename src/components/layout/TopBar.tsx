@@ -1,4 +1,4 @@
-import { Bell, Check, ChevronRight, Search } from "lucide-react";
+import { Bell, Check, ChevronRight, Search, TriangleAlert, X } from "lucide-react";
 
 function TriangleDown({ open }: { open: boolean }) {
   return (
@@ -178,6 +178,9 @@ function ProfileDropdown({ state }: { state: AppState }) {
 export function TopBar({ state }: TopBarProps) {
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [pendingEnv, setPendingEnv] = useState<Environment | null>(null);
+
+  const isBuildPage = location.pathname.startsWith("/build");
 
   const lockedEnv  = lockedEnvByRoute[location.pathname];
   const prevEnvRef = useRef(state.environment);
@@ -274,7 +277,14 @@ export function TopBar({ state }: TopBarProps) {
                     <button
                       key={isProdActive ? `prod-${prodGlowKey}` : env}
                       disabled={isLocked}
-                      onClick={() => { if (!lockedEnv) state.setEnvironment(env); }}
+                      onClick={() => {
+                        if (lockedEnv) return;
+                        if (isBuildPage && env === "Production" && state.environment !== "Production") {
+                          setPendingEnv(env);
+                        } else {
+                          state.setEnvironment(env);
+                        }
+                      }}
                       className={`rounded px-2.5 py-1 text-xs font-medium transition ${
                         isActive
                           ? "bg-stone-900 text-white"
@@ -313,6 +323,46 @@ export function TopBar({ state }: TopBarProps) {
 
       {paletteOpen && (
         <CommandPalette state={state} onClose={() => setPaletteOpen(false)} />
+      )}
+
+      {pendingEnv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]">
+          <div className="w-[400px] overflow-hidden rounded-xl border border-line bg-white shadow-xl">
+            <div className="flex items-start justify-between px-5 pt-5 pb-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
+                  <TriangleAlert size={15} className="text-red-500" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-ink">Switch to Production?</div>
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    Production changes apply immediately to live users. Editing is locked by default and requires explicit unlock.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPendingEnv(null)}
+                className="ml-2 shrink-0 rounded p-1 text-muted transition hover:bg-stone-100 hover:text-ink"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+              <button
+                onClick={() => setPendingEnv(null)}
+                className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-stone-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { state.setEnvironment(pendingEnv); setPendingEnv(null); }}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Switch to Production
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

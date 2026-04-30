@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import type { AppState } from "../../App";
 import { LeftRail } from "./LeftRail";
@@ -12,7 +12,8 @@ type AppShellProps = {
 
 export function AppShell({ state, children }: AppShellProps) {
   const location = useLocation();
-  const isEvaluatePage = location.pathname === "/evaluate";
+  const isNoScrollPage =
+    location.pathname === "/evaluate" || location.pathname.startsWith("/build");
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -25,6 +26,20 @@ export function AppShell({ state, children }: AppShellProps) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (location.pathname === "/workspace") {
+      mainRef.current?.scrollTo({ top: 0 });
+    }
+  }, [state.workspace?.id, location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname === "/agent") {
+      mainRef.current?.scrollTo({ top: 0 });
+    }
+  }, [state.agent?.id, location.pathname]);
 
   const isMobile = viewportWidth < 768;
   const isTablet = viewportWidth >= 768 && viewportWidth < 1024;
@@ -49,10 +64,16 @@ export function AppShell({ state, children }: AppShellProps) {
     <div className="min-h-screen bg-canvas text-ink">
       <TopBar state={state} />
       <div className="flex h-[calc(100vh-3.5rem)]">
-        <LeftRail />
+        <LeftRail state={state} />
         {!isTablet && <ContextPanel state={state} />}
-        <main className="compact-scrollbar flex-1 overflow-auto">
-          <div className={`mx-auto max-w-[1440px] space-y-5 py-5 ${isTablet ? "px-4" : "px-6"}`}>
+        <main ref={mainRef} className={`flex-1 ${isNoScrollPage ? "overflow-hidden" : "compact-scrollbar overflow-auto"}`}>
+          <div
+            className={`mx-auto max-w-[1440px] ${
+              isNoScrollPage
+                ? "flex h-full flex-col pt-5 pb-6"
+                : "space-y-5 py-5"
+            } ${isTablet ? "px-4" : "px-6"}`}
+          >
             {isTablet && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
                 Limited layout mode (768-1023px): side context panel is hidden for readability.

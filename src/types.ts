@@ -28,6 +28,7 @@ export type Agent = {
   environment: Environment;
   qualityScore: number;
   lastRun: string;
+  hasActivity?: boolean;
 };
 
 export type Permission = {

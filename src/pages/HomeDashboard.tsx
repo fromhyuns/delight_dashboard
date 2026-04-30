@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Info, Pin } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, Info, Pin } from "lucide-react";
 import type { AppState } from "../App";
 import { ActionButton } from "../components/ui/ActionButton";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ type ActionItem = {
   reason: string;
   tone: "risk" | "attention" | "stable";
   cta: string;
+  tag?: string;
   emphasized?: boolean;
   workspaceId?: string;
   agentId?: string;
@@ -34,6 +35,7 @@ type QuickAgent = {
   workspaceId: string;
   agentId: string;
   status: "stable" | "attention" | "risk";
+  hasActivity?: boolean;
 };
 
 type ActivityItem = {
@@ -74,9 +76,10 @@ const roleContent: Record<Role, RoleContent> = {
       { label: "Stable",         value: "19", detail: "Passing latest evaluation",     tone: "stable"    },
     ],
     actionItems: [
-      { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "Failed staging test — 2 policy edge cases",    tone: "risk",      cta: "Review Test",      emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"          },
-      { id: "a2", agentName: "Catalog Monitor",           workspace: "Shopping Support",     reason: "Draft instruction changes pending build",       tone: "attention", cta: "Open Build",                        workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/development" },
-      { id: "a3", agentName: "Reservation Change Triage", workspace: "Reservation CX",       reason: "Approval pending from workspace admin",         tone: "attention", cta: "View Status",                       workspaceId: "reservation-cx",  agentId: "query-intent",    route: "/agent"             },
+      { id: "a0", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "Escalation rate spiked to 12.3% — 34 tasks escalated in last 2h", tone: "risk",      tag: "TASKS", cta: "View Tasks",       emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/agent"             },
+      { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "Failed staging test — 2 policy edge cases",                       tone: "risk",      tag: "TEST",  cta: "Review Test",                        workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"          },
+      { id: "a2", agentName: "Catalog Monitor",           workspace: "Shopping Support",     reason: "Draft instruction changes pending build",                         tone: "attention", tag: "BUILD", cta: "Open Build",                         workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/development" },
+      { id: "a3", agentName: "Reservation Change Triage", workspace: "Reservation CX",       reason: "Approval pending from workspace admin",                           tone: "attention", tag: "BUILD", cta: "View Status",                        workspaceId: "reservation-cx",  agentId: "query-intent",    route: "/agent"             },
     ],
   },
   "Workspace Admin": {
@@ -87,10 +90,11 @@ const roleContent: Record<Role, RoleContent> = {
       { label: "Stable",         value: "16", detail: "Ready or operating normally",   tone: "stable"    },
     ],
     actionItems: [
-      { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "2 staging test failures blocking release",      tone: "risk",      cta: "Review Failed Tests", emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"                },
-      { id: "a2", agentName: "Catalog Monitor",           workspace: "Shopping Support",     reason: "Final staging run needed before approval",      tone: "attention", cta: "Execute Preview",               workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/development"       },
-      { id: "a3", agentName: "Ticket Routing Agent",      workspace: "Global Customer Care", reason: "Agent paused — pending admin review",           tone: "attention", cta: "Review",                        workspaceId: "global-care",      agentId: "ticket-routing",  route: "/agent"                   },
-      { id: "a4", agentName: "Reservation Change Triage", workspace: "Reservation CX",       reason: "Checks passed, ready for production promotion", tone: "stable",    cta: "Request Approval",              workspaceId: "reservation-cx",  agentId: "query-intent",    route: "/build/production-safety" },
+      { id: "a0", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "18 failed tasks unresolved · failure rate 5.2% above threshold",  tone: "risk",      tag: "TASKS", cta: "View Tasks",          emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/agent"                   },
+      { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "2 staging test failures blocking release",                         tone: "risk",      tag: "TEST",  cta: "Review Failed Tests",               workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"                },
+      { id: "a2", agentName: "Catalog Monitor",           workspace: "Shopping Support",     reason: "Final staging run needed before approval",                         tone: "attention", tag: "BUILD", cta: "Execute Preview",                   workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/development"       },
+      { id: "a3", agentName: "Ticket Routing Agent",      workspace: "Global Customer Care", reason: "Agent paused — pending admin review",                              tone: "attention", tag: "BUILD", cta: "Review",                            workspaceId: "global-care",      agentId: "ticket-routing",  route: "/agent"                   },
+      { id: "a4", agentName: "Reservation Change Triage", workspace: "Reservation CX",       reason: "Checks passed, ready for production promotion",                    tone: "stable",    tag: "BUILD", cta: "Request Approval",                  workspaceId: "reservation-cx",  agentId: "query-intent",    route: "/build/production-safety" },
     ],
   },
   "Org Admin": {
@@ -101,9 +105,10 @@ const roleContent: Record<Role, RoleContent> = {
       { label: "Stable",         value: "13", detail: "Within governance thresholds",  tone: "stable"    },
     ],
     actionItems: [
-      { id: "a1", agentName: "Payment Issue Resolver", workspace: "Naver Pay Operations", reason: "Restricted — production risk pending policy review",    tone: "risk",      cta: "View Production Risks",   emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/build/production-safety" },
-      { id: "a2", agentName: "Ticket Routing Agent",   workspace: "Global Customer Care", reason: "2 access reviews required by security",                 tone: "attention", cta: "Review Workspace Issues",               workspaceId: "global-care",                             route: "/workspace"               },
-      { id: "a3", agentName: "Catalog Monitor",        workspace: "Shopping Support",     reason: "Policy exception flagged — needs governance sign-off",   tone: "attention", cta: "View Governance",                       workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/production-safety" },
+      { id: "a0", agentName: "Payment Issue Resolver", workspace: "Naver Pay Operations", reason: "Production task failure rate elevated — 47 failed tasks org-wide today",    tone: "risk",      tag: "TASKS", cta: "View Tasks",              emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/agent"                   },
+      { id: "a1", agentName: "Payment Issue Resolver", workspace: "Naver Pay Operations", reason: "Restricted — production risk pending policy review",                         tone: "risk",      tag: "BUILD", cta: "View Production Risks",               workspaceId: "naver-pay",        agentId: "refund-review",   route: "/build/production-safety" },
+      { id: "a2", agentName: "Ticket Routing Agent",   workspace: "Global Customer Care", reason: "2 access reviews required by security",                                     tone: "attention", tag: "BUILD", cta: "Review Workspace Issues",             workspaceId: "global-care",                             route: "/workspace"               },
+      { id: "a3", agentName: "Catalog Monitor",        workspace: "Shopping Support",     reason: "Policy exception flagged — needs governance sign-off",                      tone: "attention", tag: "BUILD", cta: "View Governance",                     workspaceId: "shopping-support", agentId: "catalog-monitor", route: "/build/production-safety" },
     ],
   },
 };
@@ -114,7 +119,7 @@ const roleMeta: Record<Role, RoleMeta> = {
     scopeText: "3 items require your attention · 4 workspaces",
     quickAccess: [
       { id: "q1", name: "Refund Assistant",        workspace: "Naver Pay Operations", workspaceId: "naver-pay",        agentId: "refund-assistant",    status: "stable"    },
-      { id: "q2", name: "Transaction Failure Bot", workspace: "Naver Pay Operations", workspaceId: "naver-pay",        agentId: "transaction-failure", status: "attention" },
+      { id: "q2", name: "Transaction Failure Bot", workspace: "Naver Pay Operations", workspaceId: "naver-pay",        agentId: "transaction-failure", status: "attention", hasActivity: true },
       { id: "q3", name: "Catalog Monitor",         workspace: "Shopping Support",     workspaceId: "shopping-support", agentId: "catalog-monitor",     status: "risk"      },
       { id: "q4", name: "Query Intent Agent",      workspace: "Reservation CX",       workspaceId: "reservation-cx",  agentId: "query-intent",        status: "stable"    },
       { id: "q5", name: "Ticket Routing Agent",    workspace: "Global Customer Care", workspaceId: "global-care",     agentId: "ticket-routing",      status: "attention" },
@@ -207,9 +212,11 @@ function statusLabel(status: QuickAgent["status"]) {
   return "Stable";
 }
 
-function initials(name: string) {
-  return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-}
+const quickStatusDot: Record<QuickAgent["status"], string> = {
+  stable:    "bg-teal-500",
+  attention: "bg-amber-500",
+  risk:      "bg-red-400",
+};
 
 /* ─── Component ────────────────────────────────────────────── */
 
@@ -217,7 +224,7 @@ export function HomeDashboard({ app }: PageProps) {
   const navigate = useNavigate();
   const content = roleContent[app.role];
   const meta = roleMeta[app.role];
-  const [statusFilter, setStatusFilter]   = useState<Metric["tone"] | null>(null);
+  const [statusFilter, setStatusFilter]   = useState<Metric["tone"] | null>("total");
   const [pinnedIds, setPinnedIds]         = useState<Set<string>>(new Set());
   const [quickPage, setQuickPage]         = useState(0);
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
@@ -283,7 +290,7 @@ export function HomeDashboard({ app }: PageProps) {
               {content.metrics.map((m) => (
                 <button
                   key={m.label}
-                  onClick={() => setStatusFilter((prev) => prev === m.tone ? null : m.tone)}
+                  onClick={() => setStatusFilter((prev) => prev === m.tone ? "total" : m.tone)}
                   className={`border-r border-r-line border-t-[3px] px-4 py-3 text-left transition last:border-r-0 ${
                     statusFilter === m.tone
                       ? "border-t-[#1f2933] bg-stone-100 ring-1 ring-inset ring-stone-300/60"
@@ -303,7 +310,7 @@ export function HomeDashboard({ app }: PageProps) {
               <div className="flex items-center gap-2">
                 {statusFilter && statusFilter !== "total" && (
                   <button
-                    onClick={() => setStatusFilter(null)}
+                    onClick={() => setStatusFilter("total")}
                     className="rounded bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500 transition hover:bg-stone-200"
                   >
                     {statusFilter} ×
@@ -327,9 +334,18 @@ export function HomeDashboard({ app }: PageProps) {
                       className={`flex items-center gap-4 px-4 py-3 ${item.emphasized ? "bg-amber-50/50" : ""}`}
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
+                        <div className="flex items-center gap-1.5">
                           <span className="text-sm font-semibold text-ink">{item.agentName}</span>
                           <span className="text-[11px] text-stone-400">#{item.workspace.toUpperCase()}</span>
+                          {item.tag && (
+                            <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wide ${
+                              item.tag === "TASKS"
+                                ? "border-amber-200 bg-amber-50 text-amber-600"
+                                : "border-stone-200 bg-stone-100 text-stone-400"
+                            }`}>
+                              {item.tag}
+                            </span>
+                          )}
                         </div>
                         <div className="mt-0.5 text-[13px] text-muted">{item.reason}</div>
                       </div>
@@ -413,8 +429,8 @@ export function HomeDashboard({ app }: PageProps) {
                     </button>
 
                     {/* Avatar */}
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-stone-100 text-xs font-bold text-stone-500">
-                      {initials(q.name)}
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-stone-600">
+                      <Bot size={15} className="text-white" />
                     </div>
 
                     {/* Name */}

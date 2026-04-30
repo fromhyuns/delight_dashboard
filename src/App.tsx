@@ -53,7 +53,11 @@ export default function App() {
         setAgentId(firstAgent.id);
       }
     },
-    setAgentId,
+    setAgentId: (id) => {
+      const target = agents.find((a) => a.id === id);
+      if (target) setWorkspaceId(target.workspaceId);
+      setAgentId(id);
+    },
     setEnvironment,
   };
 

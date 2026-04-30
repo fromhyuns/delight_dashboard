@@ -111,8 +111,8 @@ export function CommandPalette({ state, onClose }: Props) {
     const allActions = [
       {
         id: "action-build",
-        label: "Open Build",
-        sublabel: "Development environment",
+        label: "New Build",
+        sublabel: "Start a new build for current agent",
         icon: <GitBranch size={15} />,
         path: "/build/development",
       },
@@ -125,8 +125,8 @@ export function CommandPalette({ state, onClose }: Props) {
       },
       {
         id: "action-evaluate",
-        label: "View Evaluate",
-        sublabel: "Evaluation dashboard",
+        label: "Evaluate",
+        sublabel: "View evaluation results",
         icon: <BarChart3 size={15} />,
         path: "/evaluate",
       },

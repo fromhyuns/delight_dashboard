@@ -19,6 +19,7 @@ export const agents: Agent[] = [
     environment: "Production",
     qualityScore: 88,
     lastRun: "12 min ago",
+    hasActivity: true,
   },
   {
     id: "refund-assistant",
@@ -39,6 +40,7 @@ export const agents: Agent[] = [
     environment: "Staging",
     qualityScore: 91,
     lastRun: "41 min ago",
+    hasActivity: true,
   },
   {
     id: "catalog-monitor",

@@ -1,4 +1,4 @@
-import { Filter, Plus, Search, X } from "lucide-react";
+import { Bot, Filter, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -19,7 +19,14 @@ const agentSubNav: SubNavItem[] = [
   { label: "Evaluate", to: "/evaluate",                  isActive: (p, s) => p === "/evaluate" && !s.includes("test") },
 ];
 
-type AgentQuick = "all" | "assigned" | "recent";
+type AgentQuick = "all" | "recent";
+
+const agentStatusDot: Record<string, string> = {
+  Live:   "bg-teal-500",
+  Review: "bg-amber-500",
+  Draft:  "bg-stone-400",
+  Paused: "bg-red-400",
+};
 type WorkspaceQuick = "all" | "managed" | "recent";
 
 /* ─── Shared small components ─────────────────────────────── */
@@ -230,9 +237,8 @@ function AgentPanel({ state }: Props) {
 
         {/* Quick filter chips */}
         <div className="mt-2 flex gap-0.5">
-          <Chip label="All"            active={quick === "all"}      onClick={() => setQuick("all")} />
-          <Chip label="Assigned to me" active={quick === "assigned"}  onClick={() => setQuick("assigned")} />
-          <Chip label="Recent"         active={quick === "recent"}   onClick={() => setQuick("recent")} />
+          <Chip label="All"    active={quick === "all"}    onClick={() => setQuick("all")} />
+          <Chip label="Recent" active={quick === "recent"} onClick={() => setQuick("recent")} />
         </div>
       </div>
 
@@ -330,12 +336,23 @@ function AgentPanel({ state }: Props) {
                   navigate("/agent");
                 }}
                 style={{ width: "calc(100% - 12px)" }}
-                className={`mx-1.5 flex items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition ${
+                className={`relative mx-1.5 flex items-center gap-2 rounded-md px-2.5 py-2 text-left transition ${
                   isSelected
-                    ? "bg-accent/[0.08] text-white ring-1 ring-accent/60"
+                    ? "bg-accent/15 text-white"
                     : "text-stone-300 hover:bg-white/[0.05] hover:text-white"
                 }`}
               >
+                {isSelected && (
+                  <span className="absolute left-0 top-0 h-full w-0.5 rounded-r-full bg-accent" />
+                )}
+                <div className="relative shrink-0">
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-stone-600">
+                    <Bot size={11} className="text-white" />
+                  </div>
+                  {agent.hasActivity && (
+                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-purple-500 ring-1 ring-[#1c1c24]" />
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs font-medium">{agent.name}</div>
                   <div className="truncate text-[10px] text-stone-500">
