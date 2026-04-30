@@ -203,10 +203,12 @@ function AgentPanel({ state }: Props) {
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
-            <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-              <Plus size={11} />
-              New
-            </button>
+            {state.role !== "Agent Builder / Operator" && (
+              <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
+                <Plus size={11} />
+                New
+              </button>
+            )}
           </div>
         </div>
 
@@ -444,10 +446,12 @@ function WorkspacePanel({ state }: Props) {
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
-            <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-              <Plus size={11} />
-              New
-            </button>
+            {state.role === "Org Admin" && (
+              <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
+                <Plus size={11} />
+                New
+              </button>
+            )}
           </div>
         </div>
 
@@ -470,7 +474,7 @@ function WorkspacePanel({ state }: Props) {
         {/* Quick filter chips */}
         <div className="mt-2 flex gap-0.5">
           <Chip label="All"           active={quick === "all"}     onClick={() => setQuick("all")} />
-          <Chip label="Managed by me" active={quick === "managed"} onClick={() => setQuick("managed")} />
+          <Chip label="My Workspaces" active={quick === "managed"} onClick={() => setQuick("managed")} />
           <Chip label="Recent"        active={quick === "recent"}  onClick={() => setQuick("recent")} />
         </div>
       </div>
@@ -492,7 +496,7 @@ function WorkspacePanel({ state }: Props) {
 
           <div className="flex flex-col gap-3.5">
             <PopoverSection title="Scope">
-              {["All workspaces", "Managed by me", "Recently viewed"].map((opt) => (
+              {["All workspaces", "My Workspaces", "Recently viewed"].map((opt) => (
                 <RadioOption key={opt} label={opt} selected={false} onClick={() => {}} />
               ))}
             </PopoverSection>

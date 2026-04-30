@@ -12,7 +12,6 @@ type WorkspaceAgentStatus = "At Risk" | "Attention" | "Stable" | "In Progress" |
 type FilterStatus = "All" | WorkspaceAgentStatus;
 type FilterEnvironment = "All" | "Dev" | "Staging" | "Prod";
 type SortMode = "Risk first" | "Recently updated" | "Agent A-Z";
-type TabName = "Overview" | "Agents" | "Performance" | "Alerts" | "Settings";
 
 type WorkspaceAgent = {
   id: string;
@@ -29,7 +28,6 @@ type WorkspaceAgent = {
   assigned: boolean;
 };
 
-const tabs: TabName[] = ["Overview", "Agents", "Performance", "Alerts", "Settings"];
 const sortOptions: SortMode[] = ["Risk first", "Recently updated", "Agent A-Z"];
 
 const naverPayAgents: WorkspaceAgent[] = [
@@ -148,11 +146,11 @@ const naverPayAgents: WorkspaceAgent[] = [
 ];
 
 const riskOrder: Record<WorkspaceAgentStatus, number> = {
-  "At Risk":    0,
-  Attention:    1,
-  "In Progress":2,
-  Draft:        3,
-  Stable:       4,
+  "At Risk":     0,
+  Attention:     1,
+  "In Progress": 2,
+  Draft:         3,
+  Stable:        4,
 };
 
 const tonePriority = { danger: 0, warning: 1, neutral: 2, success: 3 } as const;
@@ -167,18 +165,18 @@ function criticalIssueText(agent: WorkspaceAgent): string {
   return critical.map((e) => `${e.name} ${e.state}`).join(" · ");
 }
 
-function envBadgeClass(tone: WorkspaceAgent["environments"][number]["tone"]) {
-  if (tone === "success") return "border-emerald-200 bg-emerald-50 text-success";
-  if (tone === "warning") return "border-amber-200 bg-amber-50 text-warning";
-  if (tone === "danger")  return "border-red-200 bg-red-50 text-danger";
-  return "border-stone-200 bg-stone-50 text-stone-500";
+function envTextColor(tone: WorkspaceAgent["environments"][number]["tone"]) {
+  if (tone === "danger")  return "text-danger";
+  if (tone === "warning") return "text-warning";
+  if (tone === "success") return "text-success";
+  return "text-muted";
 }
 
 function roleCopy(role: AppState["role"]) {
   if (role === "Workspace Admin") {
     return {
       settingsLabel: "Workspace Settings",
-      primaryLabel: "New Agent",
+      primaryLabel: "Add Agent",
       primaryDisabled: false,
       context: "Can add agents, manage workspace settings, and run staging tests.",
       tableAction: (a: WorkspaceAgent) => (a.status === "Stable" ? "Execute Preview" : "Open Agent"),
@@ -202,38 +200,6 @@ function roleCopy(role: AppState["role"]) {
   };
 }
 
-/* ── Summary card ─────────────────────────────────────────── */
-
-type SummaryTone = "danger" | "warning" | "success" | "neutral";
-
-const summaryToneMap: Record<SummaryTone, { number: string; activeBorder: string; activeBg: string }> = {
-  danger:  { number: "text-danger",  activeBorder: "border-danger/30",  activeBg: "bg-danger/5"  },
-  warning: { number: "text-warning", activeBorder: "border-warning/30", activeBg: "bg-warning/5" },
-  success: { number: "text-success", activeBorder: "border-success/30", activeBg: "bg-success/5" },
-  neutral: { number: "text-ink",     activeBorder: "border-accent/30",  activeBg: "bg-accent/5"  },
-};
-
-function SummaryCard({
-  label, count, tone, active, onClick,
-}: {
-  label: string; count: number; tone: SummaryTone; active: boolean; onClick: () => void;
-}) {
-  const s = summaryToneMap[tone];
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${
-        active
-          ? `${s.activeBorder} ${s.activeBg}`
-          : "border-line bg-white hover:bg-stone-50"
-      }`}
-    >
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</div>
-      <div className={`mt-2 text-3xl font-bold ${s.number}`}>{count}</div>
-    </button>
-  );
-}
-
 /* ── Environment summary cell ─────────────────────────────── */
 
 function EnvSummaryCell({ environments }: { environments: WorkspaceAgent["environments"] }) {
@@ -245,14 +211,20 @@ function EnvSummaryCell({ environments }: { environments: WorkspaceAgent["enviro
   }
 
   const otherProblematic = sorted.slice(1).filter((e) => e.tone !== "success");
+  const tooltipText = otherProblematic.map((e) => `${e.name}: ${e.state}`).join(", ");
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className={`rounded border px-1.5 py-0.5 text-[11px] font-medium ${envBadgeClass(primary.tone)}`}>
-        {primary.name} {primary.state}
+      <span className={`text-xs font-medium ${envTextColor(primary.tone)}`}>
+        {primary.name} · {primary.state}
       </span>
       {otherProblematic.length > 0 && (
-        <span className="text-[11px] text-muted">+{otherProblematic.length}</span>
+        <span
+          title={tooltipText}
+          className="cursor-help text-[11px] text-stone-400 underline decoration-dashed underline-offset-2"
+        >
+          +{otherProblematic.length}
+        </span>
       )}
     </div>
   );
@@ -260,12 +232,18 @@ function EnvSummaryCell({ environments }: { environments: WorkspaceAgent["enviro
 
 /* ── Page ─────────────────────────────────────────────────── */
 
+type SummaryCell = {
+  label: string;
+  count: number;
+  numColor: string;
+  filterVal: FilterStatus;
+};
+
 export function WorkspaceDetail({ app }: PageProps) {
-  const [activeTab, setActiveTab]               = useState<TabName>("Agents");
-  const [query, setQuery]                       = useState("");
-  const [statusFilter, setStatusFilter]         = useState<FilterStatus>("All");
+  const [query, setQuery]                         = useState("");
+  const [statusFilter, setStatusFilter]           = useState<FilterStatus>("All");
   const [environmentFilter, setEnvironmentFilter] = useState<FilterEnvironment>("All");
-  const [sortMode, setSortMode]                 = useState<SortMode>("Risk first");
+  const [sortMode, setSortMode]                   = useState<SortMode>("Risk first");
 
   const permissions = roleCopy(app.role);
 
@@ -276,10 +254,19 @@ export function WorkspaceDetail({ app }: PageProps) {
     total:     naverPayAgents.length,
   }), []);
 
-  const needsAttentionAgents = useMemo(
-    () => naverPayAgents.filter((a) => a.status === "At Risk" || a.status === "Attention"),
-    [],
-  );
+  const summaryCells: SummaryCell[] = [
+    { label: "Total Agents",    count: counts.total,     numColor: "text-accent",  filterVal: "All"        },
+    { label: "At Risk",         count: counts.atRisk,    numColor: "text-danger",  filterVal: "At Risk"    },
+    { label: "Needs Attention", count: counts.attention, numColor: "text-warning", filterVal: "Attention"  },
+    { label: "Stable",          count: counts.stable,    numColor: "text-success", filterVal: "Stable"     },
+  ];
+
+  const needsAttentionFiltered = useMemo(() => {
+    if (statusFilter === "All") {
+      return naverPayAgents.filter((a) => a.status === "At Risk" || a.status === "Attention");
+    }
+    return naverPayAgents.filter((a) => a.status === statusFilter);
+  }, [statusFilter]);
 
   const filteredAgents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -297,8 +284,12 @@ export function WorkspaceDetail({ app }: PageProps) {
       });
   }, [environmentFilter, query, sortMode, statusFilter]);
 
-  function toggleStatusFilter(s: WorkspaceAgentStatus) {
-    setStatusFilter((prev) => (prev === s ? "All" : s));
+  function handleSummaryClick(filterVal: FilterStatus) {
+    if (filterVal === "All") {
+      setStatusFilter("All");
+    } else {
+      setStatusFilter((prev) => (prev === filterVal ? "All" : filterVal));
+    }
   }
 
   return (
@@ -316,245 +307,234 @@ export function WorkspaceDetail({ app }: PageProps) {
             <Settings size={16} />
             {permissions.settingsLabel}
           </ActionButton>
-          <ActionButton
-            variant="primary"
-            disabled={permissions.primaryDisabled}
-            title={permissions.primaryDisabled ? "Workspace Admin permission required." : undefined}
-          >
-            {app.role === "Org Admin" ? <ShieldCheck size={16} /> : <Plus size={16} />}
-            {permissions.primaryLabel}
-          </ActionButton>
-        </div>
-      </div>
-
-      {/* ── Summary cards — filter triggers ─────────────────── */}
-      <div className="grid grid-cols-4 gap-3">
-        <SummaryCard
-          label="At Risk"
-          count={counts.atRisk}
-          tone="danger"
-          active={statusFilter === "At Risk"}
-          onClick={() => toggleStatusFilter("At Risk")}
-        />
-        <SummaryCard
-          label="Needs Attention"
-          count={counts.attention}
-          tone="warning"
-          active={statusFilter === "Attention"}
-          onClick={() => toggleStatusFilter("Attention")}
-        />
-        <SummaryCard
-          label="Stable"
-          count={counts.stable}
-          tone="success"
-          active={statusFilter === "Stable"}
-          onClick={() => toggleStatusFilter("Stable")}
-        />
-        <SummaryCard
-          label="Total Agents"
-          count={counts.total}
-          tone="neutral"
-          active={statusFilter === "All"}
-          onClick={() => setStatusFilter("All")}
-        />
-      </div>
-
-      {/* ── Needs Attention ──────────────────────────────────── */}
-      {needsAttentionAgents.length > 0 && statusFilter === "All" && (
-        <div>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink">
-            Needs Attention
-          </h2>
-          <Card className="overflow-hidden p-0">
-            <div className="divide-y divide-line">
-              {needsAttentionAgents.map((agent) => {
-                const issue = criticalIssueText(agent);
-                const locked = app.role === "Agent Builder / Operator" && !agent.assigned;
-                return (
-                  <div key={agent.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <StatusChip status={agent.status} />
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-ink">{agent.name}</div>
-                        {issue && (
-                          <div className="mt-0.5 text-xs text-muted">{issue}</div>
-                        )}
-                      </div>
-                    </div>
-                    <ActionButton
-                      variant={locked ? "quiet" : "secondary"}
-                      className="h-7 shrink-0 px-2.5 text-xs"
-                      disabled={locked}
-                    >
-                      {locked ? "View Only" : permissions.tableAction(agent)}
-                    </ActionButton>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ── All Agents ──────────────────────────────────────── */}
-      <div>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink">
-          All Agents
-          {statusFilter !== "All" && (
-            <span className="ml-2 font-normal normal-case text-muted">
-              — filtered by {statusFilter}
-              <button
-                onClick={() => setStatusFilter("All")}
-                className="ml-1.5 text-accent hover:underline"
-              >
-                Clear
-              </button>
-            </span>
+          {!permissions.primaryDisabled && (
+            <ActionButton variant="primary">
+              {app.role === "Org Admin" ? <ShieldCheck size={16} /> : <Plus size={16} />}
+              {permissions.primaryLabel}
+            </ActionButton>
           )}
-        </h2>
+        </div>
+      </div>
 
-        <Card className="overflow-hidden">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 border-b border-line px-3 pt-2">
-            {tabs.map((tab) => (
+      {/* ── Unified: Status Summary + Needs Attention ────────── */}
+      <div className="rounded-lg border border-line bg-white">
+
+        {/* Status filter row */}
+        <div className="grid grid-cols-4 border-b border-line">
+          {summaryCells.map((cell) => {
+            const isActive = statusFilter === cell.filterVal;
+            return (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`h-9 border-b-2 px-3 text-sm font-medium ${
-                  activeTab === tab
-                    ? "border-accent text-accent"
-                    : "border-transparent text-muted hover:text-ink"
+                key={cell.label}
+                onClick={() => handleSummaryClick(cell.filterVal)}
+                className={`border-r border-r-line border-t-[3px] px-4 py-3 text-left transition last:border-r-0 ${
+                  isActive
+                    ? "border-t-[#1f2933] bg-stone-100 ring-1 ring-inset ring-stone-300/60"
+                    : "border-t-transparent hover:bg-stone-50/60"
                 }`}
               >
-                {tab}
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{cell.label}</div>
+                <div className={`mt-1 text-2xl font-bold ${cell.numColor}`}>{cell.count}</div>
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Toolbar */}
-          <div className="border-b border-line bg-stone-50/60 px-3 py-3">
-            <div className="grid grid-cols-[1fr_170px_190px_170px] gap-3">
-              <label className="flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-muted">
-                <Search size={15} />
-                <input
-                  aria-label="Search agents"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search agents..."
-                  className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
-                />
-              </label>
-
-              <select
-                aria-label="Health status filter"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as FilterStatus)}
-                className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
+        {/* Needs Attention header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
+          <h2 className="text-[12px] font-bold uppercase tracking-wide text-muted">Needs Attention</h2>
+          <div className="flex items-center gap-2">
+            {statusFilter !== "All" && (
+              <button
+                onClick={() => setStatusFilter("All")}
+                className="rounded bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500 transition hover:bg-stone-200"
               >
-                <option value="All">Health Status</option>
-                <option value="At Risk">At Risk</option>
-                <option value="Attention">Attention</option>
-                <option value="Stable">Stable</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Draft">Draft</option>
-              </select>
-
-              <select
-                aria-label="Environment stage filter"
-                value={environmentFilter}
-                onChange={(e) => setEnvironmentFilter(e.target.value as FilterEnvironment)}
-                className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="All">Environment Stage</option>
-                <option value="Dev">Dev</option>
-                <option value="Staging">Staging</option>
-                <option value="Prod">Prod</option>
-              </select>
-
-              <select
-                aria-label="Sort agents"
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
-              >
-                {sortOptions.map((s) => (
-                  <option key={s} value={s}>Sort: {s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="p-3">
-            <DataTable<WorkspaceAgent>
-              rows={filteredAgents}
-              getRowKey={(a) => a.id}
-              columns={[
-                {
-                  key: "agent",
-                  header: "Agent",
-                  render: (a) => (
-                    <div>
-                      <div className="font-semibold text-ink">{a.name}</div>
-                      <div className="text-xs text-muted">Naver Pay Operations</div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "status",
-                  header: "Status",
-                  render: (a) => <StatusChip status={a.status} />,
-                },
-                {
-                  key: "env",
-                  header: "Environments",
-                  render: (a) => <EnvSummaryCell environments={a.environments} />,
-                },
-                {
-                  key: "updated",
-                  header: "Last Updated",
-                  render: (a) => <span className="text-sm text-muted">{a.lastUpdated}</span>,
-                },
-                {
-                  key: "owner",
-                  header: "Owner",
-                  render: (a) => <span className="text-sm text-ink">{a.owner}</span>,
-                },
-                {
-                  key: "action",
-                  header: "Action",
-                  render: (a) => {
-                    const locked = app.role === "Agent Builder / Operator" && !a.assigned;
-                    return (
-                      <div className="flex items-center gap-2">
-                        <ActionButton
-                          variant={locked ? "quiet" : "secondary"}
-                          className="h-7 px-2 text-xs"
-                          disabled={locked}
-                          title={locked ? "Only Relevant Items can be opened by this role." : undefined}
-                        >
-                          {locked ? "View Only" : permissions.tableAction(a)}
-                        </ActionButton>
-                        <button
-                          aria-label={`More actions for ${a.name}`}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-line bg-white text-muted hover:bg-stone-50 hover:text-ink"
-                        >
-                          <MoreHorizontal size={15} />
-                        </button>
-                      </div>
-                    );
-                  },
-                },
-              ]}
-            />
-            {filteredAgents.length === 0 && (
-              <div className="rounded-md border border-dashed border-line py-8 text-center text-sm text-muted">
-                No agents match the current filters.
-              </div>
+                {statusFilter} ×
+              </button>
             )}
+            <span className="text-[11px] text-muted">{needsAttentionFiltered.length} agents</span>
           </div>
-        </Card>
+        </div>
+
+        {/* Needs Attention list */}
+        <div className="divide-y divide-line">
+          {needsAttentionFiltered.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-muted">
+              {statusFilter === "Stable"
+                ? "All stable — no action needed"
+                : "No agents match this filter"}
+            </div>
+          ) : (
+            needsAttentionFiltered.map((agent) => {
+              const issue = criticalIssueText(agent);
+              const locked = app.role === "Agent Builder / Operator" && !agent.assigned;
+              return (
+                <div key={agent.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <StatusChip status={agent.status} />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-ink">{agent.name}</div>
+                      {issue && <div className="mt-0.5 text-xs text-muted">{issue}</div>}
+                    </div>
+                  </div>
+                  <ActionButton
+                    variant={locked ? "quiet" : "secondary"}
+                    className="h-7 shrink-0 px-2.5 text-xs"
+                    disabled={locked}
+                  >
+                    {locked ? "View Only" : permissions.tableAction(agent)}
+                  </ActionButton>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
+
+      {/* ── Agent List ───────────────────────────────────────── */}
+      <Card className="overflow-hidden">
+
+        {/* Header */}
+        <div className="border-b border-line px-4 py-3">
+          <h2 className="text-[13px] font-bold uppercase tracking-wide text-ink">
+            Agent List
+            {statusFilter !== "All" && (
+              <span className="ml-2 font-normal normal-case text-muted">
+                — filtered by {statusFilter}
+                <button
+                  onClick={() => setStatusFilter("All")}
+                  className="ml-1.5 text-accent hover:underline"
+                >
+                  Clear
+                </button>
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {/* Toolbar */}
+        <div className="border-b border-line bg-stone-50/60 px-3 py-3">
+          <div className="grid grid-cols-[1fr_170px_190px_170px] gap-3">
+            <label className="flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-muted">
+              <Search size={15} />
+              <input
+                aria-label="Search agents"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search agents..."
+                className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+              />
+            </label>
+
+            <select
+              aria-label="Health status filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as FilterStatus)}
+              className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
+            >
+              <option value="All">Health Status</option>
+              <option value="At Risk">At Risk</option>
+              <option value="Attention">Attention</option>
+              <option value="Stable">Stable</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Draft">Draft</option>
+            </select>
+
+            <select
+              aria-label="Environment stage filter"
+              value={environmentFilter}
+              onChange={(e) => setEnvironmentFilter(e.target.value as FilterEnvironment)}
+              className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
+            >
+              <option value="All">Environment Stage</option>
+              <option value="Dev">Dev</option>
+              <option value="Staging">Staging</option>
+              <option value="Prod">Prod</option>
+            </select>
+
+            <select
+              aria-label="Sort agents"
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              className="h-9 rounded-md border border-line bg-white px-2 text-sm text-ink outline-none focus:border-accent"
+            >
+              {sortOptions.map((s) => (
+                <option key={s} value={s}>Sort: {s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="p-3">
+          <DataTable<WorkspaceAgent>
+            rows={filteredAgents}
+            getRowKey={(a) => a.id}
+            columns={[
+              {
+                key: "agent",
+                header: "Agent",
+                render: (a) => (
+                  <div>
+                    <div className="font-semibold text-ink">{a.name}</div>
+                    <div className="text-xs text-muted">Naver Pay Operations</div>
+                  </div>
+                ),
+              },
+              {
+                key: "status",
+                header: "Status",
+                render: (a) => <StatusChip status={a.status} />,
+              },
+              {
+                key: "env",
+                header: "Environments",
+                render: (a) => <EnvSummaryCell environments={a.environments} />,
+              },
+              {
+                key: "updated",
+                header: "Last Updated",
+                render: (a) => <span className="text-sm text-muted">{a.lastUpdated}</span>,
+              },
+              {
+                key: "owner",
+                header: "Owner",
+                render: (a) => <span className="text-sm text-ink">{a.owner}</span>,
+              },
+              {
+                key: "action",
+                header: "Action",
+                render: (a) => {
+                  const locked = app.role === "Agent Builder / Operator" && !a.assigned;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <ActionButton
+                        variant={locked ? "quiet" : "secondary"}
+                        className="h-7 px-2 text-xs"
+                        disabled={locked}
+                        title={locked ? "Only Relevant Items can be opened by this role." : undefined}
+                      >
+                        {locked ? "View Only" : permissions.tableAction(a)}
+                      </ActionButton>
+                      <button
+                        aria-label={`More actions for ${a.name}`}
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-line bg-white text-muted hover:bg-stone-50 hover:text-ink"
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                    </div>
+                  );
+                },
+              },
+            ]}
+          />
+          {filteredAgents.length === 0 && (
+            <div className="rounded-md border border-dashed border-line py-8 text-center text-sm text-muted">
+              No agents match the current filters.
+            </div>
+          )}
+        </div>
+      </Card>
 
     </div>
   );

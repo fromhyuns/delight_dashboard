@@ -68,10 +68,10 @@ type RoleMeta = {
 const roleContent: Record<Role, RoleContent> = {
   "Agent Builder / Operator": {
     metrics: [
+      { label: "Total Agents",   value: "26", detail: "Across 4 workspaces",           tone: "total"     },
       { label: "At Risk",        value: "2",  detail: "My agents with failing checks", tone: "risk"      },
       { label: "Need Attention", value: "5",  detail: "Drafts or test regressions",    tone: "attention" },
       { label: "Stable",         value: "19", detail: "Passing latest evaluation",     tone: "stable"    },
-      { label: "Total Agents",   value: "26", detail: "Across 4 workspaces",           tone: "total"     },
     ],
     actionItems: [
       { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "Failed staging test — 2 policy edge cases",    tone: "risk",      cta: "Review Test",      emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"          },
@@ -81,10 +81,10 @@ const roleContent: Record<Role, RoleContent> = {
   },
   "Workspace Admin": {
     metrics: [
+      { label: "Total Agents",   value: "26", detail: "Workspace portfolio",           tone: "total"     },
       { label: "At Risk",        value: "3",  detail: "Workspace release blockers",    tone: "risk"      },
       { label: "Need Attention", value: "7",  detail: "Agents awaiting admin review",  tone: "attention" },
       { label: "Stable",         value: "16", detail: "Ready or operating normally",   tone: "stable"    },
-      { label: "Total Agents",   value: "26", detail: "Workspace portfolio",           tone: "total"     },
     ],
     actionItems: [
       { id: "a1", agentName: "Payment Issue Resolver",    workspace: "Naver Pay Operations", reason: "2 staging test failures blocking release",      tone: "risk",      cta: "Review Failed Tests", emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/evaluate"                },
@@ -95,10 +95,10 @@ const roleContent: Record<Role, RoleContent> = {
   },
   "Org Admin": {
     metrics: [
+      { label: "Total Agents",   value: "26", detail: "NAVER Corp scope",              tone: "total"     },
       { label: "At Risk",        value: "4",  detail: "Org-wide production risks",     tone: "risk"      },
       { label: "Need Attention", value: "9",  detail: "Workspace policy exceptions",   tone: "attention" },
       { label: "Stable",         value: "13", detail: "Within governance thresholds",  tone: "stable"    },
-      { label: "Total Agents",   value: "26", detail: "NAVER Corp scope",              tone: "total"     },
     ],
     actionItems: [
       { id: "a1", agentName: "Payment Issue Resolver", workspace: "Naver Pay Operations", reason: "Restricted — production risk pending policy review",    tone: "risk",      cta: "View Production Risks",   emphasized: true, workspaceId: "naver-pay",        agentId: "refund-review",   route: "/build/production-safety" },
