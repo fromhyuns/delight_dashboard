@@ -168,20 +168,22 @@ App.tsx
 ```
 [Context Panel] | [설정 편집 영역] | [Simulated Preview 채팅]
 ```
-- 좌: 설정 섹션 — System Prompt · Tools · Behavior Parameters · Knowledge Base. 각 섹션 헤더에 status 뱃지.
+- 좌: 아코디언 설정 섹션 — ① Define · ② Connect · ③ Finalize · Advanced. 각 섹션은 독립 카드(rounded border)로 분리되며, 24px 패딩 내에 배치된다. 열린 섹션에만 미세한 drop shadow 적용.
+  - 필수 항목(`*`): Task Instructions(Define) · Tools(Connect) · Knowledge(Connect).
+  - 완료 체크 아이콘: 조건 충족 시 보라색(`text-accent`), 미충족 시 회색(`text-stone-300`).
 - 우: Simulated Preview — 실시간 채팅 시뮬레이션. 유저 버블은 반투명 stone 톤(`bg-stone-900/[0.12]`), 봇 버블은 white.
-- 하단 바: 환경 파이프라인 진행도 + Promote 버튼. 모든 섹션 Ready일 때 활성.
+- 하단 바: Promote 버튼. 모든 필수 섹션 Ready일 때 활성.
 
-**설계 의도**: Context Panel을 Build 진입 시 항상 열어두는 것은 에이전트를 빠르게 전환하며 설정을 비교하기 위함. 편집 영역과 프리뷰가 나란히 배치된 것은 변경사항을 즉시 확인하게 하기 위함.
+**설계 의도**: Context Panel을 Build 진입 시 항상 열어두는 것은 에이전트를 빠르게 전환하며 설정을 비교하기 위함. 아코디언을 개별 카드로 분리한 것은 좌측 영역 내에서 아코디언 UI임을 명확히 인지시키기 위함. 편집 영역과 프리뷰가 나란히 배치된 것은 변경사항을 즉시 확인하게 하기 위함.
 
 #### Variant A — Staging 환경
-- Development에서 ENV 스위처로 Staging 선택 시 amber 확인 모달 표시.
-- "Development에서 작업 중인 내용이 있을 수 있다"는 경고 + 취소/전환 버튼 (전환 버튼: `bg-stone-800`).
+- Development에서 ENV 스위처로 Staging 선택 시 amber 확인 모달 표시 (영어 텍스트).
+- "You may have unsaved work in Development. Switching to Staging will reset your current input." + Cancel / Switch to Staging 버튼 (전환 버튼: `bg-stone-800`).
 
 #### Variant B — Production 환경 (`/build/production-safety`)
 - ENV Production으로 고정(locked). 다른 환경 탭 비활성.
-- Production 선택 시 더 강한 경고 모달 (red 아이콘, `backdrop-blur`, `bg-red-600` 전환 버튼).
-- "실제 사용자에게 즉시 반영" 문구로 위험도 강조.
+- Production 선택 시 더 강한 경고 모달 (red 아이콘, `backdrop-blur`, `bg-red-600` 전환 버튼, 영어 텍스트).
+- "Changes in Production are immediately applied to real users." 문구로 위험도 강조.
 - 기본 편집 잠금 상태. 명시적 unlock 액션이 필요하도록 설계해 실수 방지.
 
 ---
@@ -241,7 +243,7 @@ App.tsx
 | `text-accent` / `bg-accent` | 강조 색상 (CTA, 선택 상태) |
 | `text-success` / `text-warning` / `text-danger` | 상태 색상 (Stable / Attention / Risk) |
 | Section 헤더 스타일 | `text-[13px] font-bold uppercase tracking-wide text-ink` |
-| Metric Card | `label + value + trend(↑↓) + detail` 4-요소 구조 |
+| Metric Card | `label + value + trend(↑↓) + detail` 4-요소 구조. value가 `—`(데이터 없음)일 때 `text-stone-300`(연한 회색) 처리 |
 | 환경 식별 원칙 | 구조(위치·잠금)로 Dev/Staging/Prod 구분, 색상은 상태(Stable·Risk)에만 사용 |
 
 ---

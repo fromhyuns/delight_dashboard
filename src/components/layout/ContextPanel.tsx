@@ -142,11 +142,12 @@ export function ContextPanel({ state, collapsed, onCollapse }: Props) {
 
   if (!showAgents && !showWorkspaces) return null;
 
-  if (collapsed) return null;
-
-  if (showAgents) return <AgentPanel state={state} onCollapse={onCollapse} />;
-  if (showWorkspaces) return <WorkspacePanel state={state} onCollapse={onCollapse} />;
-  return null;
+  return (
+    <div className={`shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out ${collapsed ? "w-0" : "w-60"}`}>
+      {showAgents && <AgentPanel state={state} onCollapse={onCollapse} />}
+      {showWorkspaces && <WorkspacePanel state={state} onCollapse={onCollapse} />}
+    </div>
+  );
 }
 
 /* ─── Agent panel ──────────────────────────────────────────── */
@@ -215,12 +216,6 @@ function AgentPanel({ state, onCollapse }: PanelProps) {
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
-            {state.role !== "Agent Builder / Operator" && (
-              <button className="flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs font-medium text-stone-300 transition hover:border-white/20 hover:bg-white/10 hover:text-stone-200">
-                <Plus size={12} />
-                New
-              </button>
-            )}
             <button
               onClick={onCollapse}
               title="패널 접기"
@@ -411,6 +406,16 @@ function AgentPanel({ state, onCollapse }: PanelProps) {
           <p className="px-4 py-3 text-xs text-stone-400">No agents found</p>
         )}
       </div>
+
+      {/* Footer */}
+      {state.role !== "Agent Builder / Operator" && (
+        <div className="shrink-0 border-t border-white/[0.12] p-3">
+          <button className="flex w-full items-center justify-center gap-2 rounded-md border border-white/20 bg-white/[0.07] px-3 py-2 text-xs font-semibold text-stone-200 transition hover:border-white/30 hover:bg-white/[0.13] hover:text-white">
+            <Plus size={13} />
+            New Agent
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -475,12 +480,6 @@ function WorkspacePanel({ state, onCollapse }: PanelProps) {
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
-            {(state.role === "Org Admin" || state.role === "Workspace Admin") && (
-              <button className="flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs font-medium text-stone-300 transition hover:border-white/20 hover:bg-white/10 hover:text-stone-200">
-                <Plus size={12} />
-                New
-              </button>
-            )}
             <button
               onClick={onCollapse}
               title="패널 접기"
@@ -633,6 +632,16 @@ function WorkspacePanel({ state, onCollapse }: PanelProps) {
           <p className="px-4 py-3 text-xs text-stone-400">No workspaces found</p>
         )}
       </div>
+
+      {/* Footer */}
+      {(state.role === "Org Admin" || state.role === "Workspace Admin") && (
+        <div className="shrink-0 border-t border-white/[0.12] p-3">
+          <button className="flex w-full items-center justify-center gap-2 rounded-md border border-white/20 bg-white/[0.07] px-3 py-2 text-xs font-semibold text-stone-200 transition hover:border-white/30 hover:bg-white/[0.13] hover:text-white">
+            <Plus size={13} />
+            New Workspace
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,12 @@ export function AppShell({ state, children }: AppShellProps) {
     location.pathname === "/evaluate" || location.pathname.startsWith("/build");
 
   const isBuildRoute = location.pathname.startsWith("/build");
+
+  const contextPanelVisible =
+    location.pathname.startsWith("/agent") ||
+    location.pathname.startsWith("/build") ||
+    location.pathname.startsWith("/evaluate") ||
+    location.pathname.startsWith("/workspace");
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -83,6 +89,7 @@ export function AppShell({ state, children }: AppShellProps) {
         )}
         <main
           ref={mainRef}
+          onClick={() => { if (contextPanelVisible && !contextCollapsed && !isBuildRoute) setContextCollapsed(true); }}
           className={`flex-1 ${isNoScrollPage ? "overflow-hidden" : "compact-scrollbar overflow-auto"}`}
         >
           <div
