@@ -6,6 +6,7 @@ import { agents, workspaces } from "../../data/mockData";
 import type { AppState } from "../../App";
 
 type Props = { state: AppState; collapsed: boolean; onCollapse: () => void };
+type PanelProps = { state: AppState; onCollapse: () => void };
 
 type SubNavItem = {
   label: string;
@@ -150,7 +151,7 @@ export function ContextPanel({ state, collapsed, onCollapse }: Props) {
 
 /* ─── Agent panel ──────────────────────────────────────────── */
 
-function AgentPanel({ state, onCollapse }: Props & { onCollapse: () => void }) {
+function AgentPanel({ state, onCollapse }: PanelProps) {
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState<AgentQuick>("all");
   const [showFilter, setShowFilter] = useState(false);
@@ -416,7 +417,7 @@ function AgentPanel({ state, onCollapse }: Props & { onCollapse: () => void }) {
 
 /* ─── Workspace panel ──────────────────────────────────────── */
 
-function WorkspacePanel({ state, onCollapse }: Props & { onCollapse: () => void }) {
+function WorkspacePanel({ state, onCollapse }: PanelProps) {
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState<WorkspaceQuick>("all");
   const [showFilter, setShowFilter] = useState(false);

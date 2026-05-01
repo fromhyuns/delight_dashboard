@@ -19,7 +19,7 @@ export function MetricCard({ label, value, detail, trend, target, targetMet }: M
   return (
     <Card className="p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-ink">{value}</div>
+      <div className={`mt-2 text-2xl font-semibold ${value === "—" ? "text-stone-300" : "text-ink"}`}>{value}</div>
 
       {(trend || detail) && (
         <div className="mt-2">

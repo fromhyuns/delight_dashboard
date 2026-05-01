@@ -38,7 +38,7 @@ export function CommandPalette({ state, onClose }: Props) {
   }
 
   const sections = useMemo<CommandSection[]>(() => {
-    const raw: Omit<CommandSection, "items"> & { items: Omit<CommandItem, "idx">[] }[] = [];
+    const raw: { title: string; items: Omit<CommandItem, "idx">[] }[] = [];
 
     if (!normalized) {
       const recentAgents = agents.filter((a) => ["refund-review", "catalog-monitor"].includes(a.id));

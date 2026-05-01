@@ -337,12 +337,12 @@ export function TopBar({ state }: TopBarProps) {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-ink">
-                    {pendingEnv === "Production" ? "Production으로 전환할까요?" : "Staging으로 전환할까요?"}
+                    {pendingEnv === "Production" ? "Switch to Production?" : "Switch to Staging?"}
                   </div>
                   <p className="mt-1 text-xs leading-5 text-muted">
                     {pendingEnv === "Production"
-                      ? "Production 변경사항은 실제 사용자에게 즉시 반영됩니다. 기본적으로 편집이 잠겨 있으며, 명시적으로 잠금을 해제해야 합니다."
-                      : "Development에서 작업 중인 내용이 있을 수 있습니다. Staging으로 전환하면 현재 입력이 초기화됩니다."}
+                      ? "Changes in Production are immediately applied to real users. Editing is locked by default and must be explicitly unlocked."
+                      : "You may have unsaved work in Development. Switching to Staging will reset your current input."}
                   </p>
                 </div>
               </div>
@@ -358,13 +358,13 @@ export function TopBar({ state }: TopBarProps) {
                 onClick={() => setPendingEnv(null)}
                 className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-stone-50"
               >
-                취소
+                Cancel
               </button>
               <button
                 onClick={() => { state.setEnvironment(pendingEnv); setPendingEnv(null); }}
                 className={`rounded-md px-4 py-2 text-sm font-medium text-white transition ${pendingEnv === "Production" ? "bg-red-600 hover:bg-red-700" : "bg-stone-800 hover:bg-stone-900"}`}
               >
-                {pendingEnv === "Production" ? "Production으로 전환" : "Staging으로 전환"}
+                {pendingEnv === "Production" ? "Switch to Production" : "Switch to Staging"}
               </button>
             </div>
           </div>

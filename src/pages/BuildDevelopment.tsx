@@ -513,6 +513,7 @@ export function BuildDevelopment({ app }: PageProps) {
   const isProd    = app.environment === "Production";
   const isStaging = app.environment === "Staging";
 
+
   useEffect(() => {
     if (!isProd) setIsUnlocked(false);
     if (app.environment === "Production" && prevEnvRef.current !== "Production") {
@@ -560,6 +561,7 @@ export function BuildDevelopment({ app }: PageProps) {
 
   return (
     <>
+
       {showEntryModal && (
         <EntryModal
           savedTasks={buildConfig.savedTasks}
@@ -674,10 +676,10 @@ export function BuildDevelopment({ app }: PageProps) {
             {/* ── Left: Accordion (50%) ────────────────────────── */}
             <div className="flex flex-1 flex-col border-r border-line">
 
-              <div className="compact-scrollbar flex-1 overflow-y-auto">
+              <div className="compact-scrollbar flex-1 overflow-y-auto p-6 space-y-2">
 
                 {/* ① Define */}
-                <div className="border-b border-line">
+                <div className={`overflow-hidden rounded-lg border border-line transition-shadow ${openSection === "define" ? "shadow-[0_2px_10px_rgba(0,0,0,0.07)]" : ""}`}>
                   <SectionHeader
                     number="1"
                     title="Define"
@@ -686,14 +688,14 @@ export function BuildDevelopment({ app }: PageProps) {
                     badge={
                       <CheckCircle
                         size={13}
-                        className={instructions.trim().length > 50 ? "text-success" : "text-stone-300"}
+                        className={instructions.trim().length > 50 ? "text-accent" : "text-stone-300"}
                       />
                     }
                   />
                   {openSection === "define" && (
                     <div className="space-y-4 px-5 pb-5">
                       <div>
-                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Task Instructions</div>
+                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Task Instructions <span className="text-danger">*</span></div>
                         <textarea
                           value={instructions}
                           onChange={(e) => setInstructions(e.target.value)}
@@ -723,22 +725,23 @@ export function BuildDevelopment({ app }: PageProps) {
                 </div>
 
                 {/* ② Connect */}
-                <div className="border-b border-line">
+                <div className={`overflow-hidden rounded-lg border border-line transition-shadow ${openSection === "connect" ? "shadow-[0_2px_10px_rgba(0,0,0,0.07)]" : ""}`}>
                   <SectionHeader
                     number="2"
                     title="Connect"
                     isOpen={openSection === "connect"}
                     onClick={() => toggleSection("connect")}
                     badge={
-                      <span className="text-[10px] font-semibold text-muted">
-                        {enabledTools.length} tools
-                      </span>
+                      <CheckCircle
+                        size={13}
+                        className={enabledTools.length > 0 ? "text-accent" : "text-stone-300"}
+                      />
                     }
                   />
                   {openSection === "connect" && (
                     <div className="space-y-4 px-5 pb-5">
                       <div>
-                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Tools</div>
+                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Tools <span className="text-danger">*</span></div>
                         <div className="space-y-1">
                           {buildConfig.tools.map((tool) => (
                             <div key={tool.id} className="flex items-center gap-3 rounded-md border border-line bg-white px-3 py-2.5">
@@ -756,7 +759,7 @@ export function BuildDevelopment({ app }: PageProps) {
                       </div>
 
                       <div>
-                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Knowledge</div>
+                        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">Knowledge <span className="text-danger">*</span></div>
                         <div className="space-y-1">
                           {buildConfig.knowledgeSources.map((src) => (
                             <div key={src.id} className="flex items-center gap-3 rounded-md border border-line bg-white px-3 py-2.5">
@@ -781,16 +784,17 @@ export function BuildDevelopment({ app }: PageProps) {
                 </div>
 
                 {/* ③ Finalize */}
-                <div className="border-b border-line">
+                <div className={`overflow-hidden rounded-lg border border-line transition-shadow ${openSection === "finalize" ? "shadow-[0_2px_10px_rgba(0,0,0,0.07)]" : ""}`}>
                   <SectionHeader
                     number="3"
                     title="Finalize"
                     isOpen={openSection === "finalize"}
                     onClick={() => toggleSection("finalize")}
                     badge={
-                      allReady
-                        ? <CheckCircle size={13} className="text-success" />
-                        : <span className="text-[10px] font-semibold text-muted">{readiness.filter((r) => r.ok).length}/{readiness.length}</span>
+                      <CheckCircle
+                        size={13}
+                        className={allReady ? "text-accent" : "text-stone-300"}
+                      />
                     }
                   />
                   {openSection === "finalize" && (
@@ -825,7 +829,7 @@ export function BuildDevelopment({ app }: PageProps) {
                 </div>
 
                 {/* Advanced */}
-                <div>
+                <div className={`overflow-hidden rounded-lg border border-line transition-shadow ${openSection === "advanced" ? "shadow-[0_2px_10px_rgba(0,0,0,0.07)]" : ""}`}>
                   <SectionHeader
                     number="···"
                     title="Advanced"
