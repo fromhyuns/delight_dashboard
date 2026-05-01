@@ -1,11 +1,11 @@
-import { Bot, Filter, Plus, Search, X } from "lucide-react";
+import { Bot, ChevronLeft, Filter, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { agents, workspaces } from "../../data/mockData";
 import type { AppState } from "../../App";
 
-type Props = { state: AppState };
+type Props = { state: AppState; collapsed: boolean; onCollapse: () => void };
 
 type SubNavItem = {
   label: string;
@@ -43,10 +43,10 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className={`rounded px-2 py-1 text-[10px] font-medium transition ${
+      className={`rounded px-2 py-1 text-xs font-medium transition ${
         active
           ? "bg-white/15 text-stone-100"
-          : "text-stone-500 hover:bg-white/[0.05] hover:text-stone-300"
+          : "text-stone-400 hover:bg-white/[0.05] hover:text-stone-200"
       }`}
     >
       {label}
@@ -129,7 +129,7 @@ function RadioOption({
 
 /* ─── Context router ───────────────────────────────────────── */
 
-export function ContextPanel({ state }: Props) {
+export function ContextPanel({ state, collapsed, onCollapse }: Props) {
   const location = useLocation();
 
   const showAgents =
@@ -139,14 +139,18 @@ export function ContextPanel({ state }: Props) {
 
   const showWorkspaces = location.pathname.startsWith("/workspace");
 
-  if (showAgents) return <AgentPanel state={state} />;
-  if (showWorkspaces) return <WorkspacePanel state={state} />;
+  if (!showAgents && !showWorkspaces) return null;
+
+  if (collapsed) return null;
+
+  if (showAgents) return <AgentPanel state={state} onCollapse={onCollapse} />;
+  if (showWorkspaces) return <WorkspacePanel state={state} onCollapse={onCollapse} />;
   return null;
 }
 
 /* ─── Agent panel ──────────────────────────────────────────── */
 
-function AgentPanel({ state }: Props) {
+function AgentPanel({ state, onCollapse }: Props & { onCollapse: () => void }) {
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState<AgentQuick>("all");
   const [showFilter, setShowFilter] = useState(false);
@@ -190,43 +194,50 @@ function AgentPanel({ state }: Props) {
 
 
       {/* Header */}
-      <div className="shrink-0 border-b border-white/[0.07] p-3">
+      <div className="shrink-0 border-b border-white/[0.12] p-3">
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
+          <span className="text-xs font-semibold uppercase tracking-widest text-stone-300">
             Agent
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowFilter((v) => !v)}
               title="Filter agents"
-              className={`flex items-center gap-1 rounded px-1.5 py-1 text-[10px] transition ${
+              className={`flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium transition ${
                 hasAdvanced || showFilter
-                  ? "bg-white/10 text-stone-200"
-                  : "text-stone-400 hover:bg-white/10 hover:text-stone-200"
+                  ? "border-white/20 bg-white/10 text-stone-200"
+                  : "border-white/10 text-stone-300 hover:border-white/20 hover:bg-white/10 hover:text-stone-200"
               }`}
             >
-              <Filter size={10} />
+              <Filter size={12} />
               {hasAdvanced && (
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
             {state.role !== "Agent Builder / Operator" && (
-              <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-                <Plus size={11} />
+              <button className="flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs font-medium text-stone-300 transition hover:border-white/20 hover:bg-white/10 hover:text-stone-200">
+                <Plus size={12} />
                 New
               </button>
             )}
+            <button
+              onClick={onCollapse}
+              title="패널 접기"
+              className="flex h-5 w-5 items-center justify-center rounded text-stone-600 transition hover:bg-white/10 hover:text-stone-400"
+            >
+              <ChevronLeft size={13} />
+            </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
-          <Search size={11} className="shrink-0 text-stone-500" />
+        <div className="flex items-center gap-2 rounded-md border border-white/[0.18] bg-white/[0.08] px-2.5 py-2">
+          <Search size={13} className="shrink-0 text-stone-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search agents..."
-            className="min-w-0 flex-1 bg-transparent text-xs text-stone-300 placeholder-stone-500 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-stone-200 placeholder-stone-400 outline-none"
           />
           {query && (
             <button onClick={() => setQuery("")}>
@@ -354,8 +365,8 @@ function AgentPanel({ state }: Props) {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs font-medium">{agent.name}</div>
-                  <div className="truncate text-[10px] text-stone-500">
+                  <div className="truncate text-[13px] font-medium">{agent.name}</div>
+                  <div className="truncate text-xs text-stone-400">
                     #{wsMap[agent.workspaceId]?.toUpperCase()}
                   </div>
                 </div>
@@ -405,7 +416,7 @@ function AgentPanel({ state }: Props) {
 
 /* ─── Workspace panel ──────────────────────────────────────── */
 
-function WorkspacePanel({ state }: Props) {
+function WorkspacePanel({ state, onCollapse }: Props & { onCollapse: () => void }) {
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState<WorkspaceQuick>("all");
   const [showFilter, setShowFilter] = useState(false);
@@ -443,43 +454,50 @@ function WorkspacePanel({ state }: Props) {
   return (
     <div className="relative flex h-full w-60 shrink-0 flex-col border-r border-black/20 bg-[#1c1c24] text-stone-300">
       {/* Header */}
-      <div className="shrink-0 border-b border-white/[0.07] p-3">
+      <div className="shrink-0 border-b border-white/[0.12] p-3">
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">
+          <span className="text-xs font-semibold uppercase tracking-widest text-stone-300">
             Workspace
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowFilter((v) => !v)}
               title="Filter workspaces"
-              className={`flex items-center gap-1 rounded px-1.5 py-1 text-[10px] transition ${
+              className={`flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium transition ${
                 hasAdvanced || showFilter
-                  ? "bg-white/10 text-stone-200"
-                  : "text-stone-400 hover:bg-white/10 hover:text-stone-200"
+                  ? "border-white/20 bg-white/10 text-stone-200"
+                  : "border-white/10 text-stone-300 hover:border-white/20 hover:bg-white/10 hover:text-stone-200"
               }`}
             >
-              <Filter size={10} />
+              <Filter size={12} />
               {hasAdvanced && (
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </button>
-            {state.role === "Org Admin" && (
-              <button className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-stone-400 transition hover:bg-white/10 hover:text-stone-200">
-                <Plus size={11} />
+            {(state.role === "Org Admin" || state.role === "Workspace Admin") && (
+              <button className="flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs font-medium text-stone-300 transition hover:border-white/20 hover:bg-white/10 hover:text-stone-200">
+                <Plus size={12} />
                 New
               </button>
             )}
+            <button
+              onClick={onCollapse}
+              title="패널 접기"
+              className="flex h-5 w-5 items-center justify-center rounded text-stone-600 transition hover:bg-white/10 hover:text-stone-400"
+            >
+              <ChevronLeft size={13} />
+            </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
-          <Search size={11} className="shrink-0 text-stone-500" />
+        <div className="flex items-center gap-2 rounded-md border border-white/[0.18] bg-white/[0.08] px-2.5 py-2">
+          <Search size={13} className="shrink-0 text-stone-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search workspaces..."
-            className="min-w-0 flex-1 bg-transparent text-xs text-stone-300 placeholder-stone-500 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-stone-200 placeholder-stone-400 outline-none"
           />
           {query && (
             <button onClick={() => setQuery("")}>
@@ -600,7 +618,7 @@ function WorkspacePanel({ state }: Props) {
               )}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium uppercase tracking-wide">#{ws.name}</div>
-                <div className="text-[10px] text-stone-500">{ws.region}</div>
+                <div className="text-xs text-stone-400">{ws.region}</div>
               </div>
               <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums ${
                 active ? "bg-white/10 text-stone-300" : "text-stone-600"

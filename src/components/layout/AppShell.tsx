@@ -12,8 +12,11 @@ type AppShellProps = {
 
 export function AppShell({ state, children }: AppShellProps) {
   const location = useLocation();
+  const [contextCollapsed, setContextCollapsed] = useState(false);
   const isNoScrollPage =
     location.pathname === "/evaluate" || location.pathname.startsWith("/build");
+
+  const isBuildRoute = location.pathname.startsWith("/build");
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -26,6 +29,12 @@ export function AppShell({ state, children }: AppShellProps) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/build")) {
+      setContextCollapsed(false);
+    }
+  }, [location.pathname]);
 
   const mainRef = useRef<HTMLElement>(null);
 
@@ -64,9 +73,18 @@ export function AppShell({ state, children }: AppShellProps) {
     <div className="min-h-screen bg-canvas text-ink">
       <TopBar state={state} />
       <div className="flex h-[calc(100vh-3.5rem)]">
-        <LeftRail state={state} />
-        {!isTablet && <ContextPanel state={state} />}
-        <main ref={mainRef} className={`flex-1 ${isNoScrollPage ? "overflow-hidden" : "compact-scrollbar overflow-auto"}`}>
+        <LeftRail state={state} onExpandContext={() => setContextCollapsed(false)} />
+        {!isTablet && (
+          <ContextPanel
+            state={state}
+            collapsed={contextCollapsed}
+            onCollapse={() => setContextCollapsed(true)}
+          />
+        )}
+        <main
+          ref={mainRef}
+          className={`flex-1 ${isNoScrollPage ? "overflow-hidden" : "compact-scrollbar overflow-auto"}`}
+        >
           <div
             className={`mx-auto max-w-[1440px] ${
               isNoScrollPage

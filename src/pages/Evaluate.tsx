@@ -1,9 +1,10 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { AppState } from "../App";
-import { ActionButton } from "../components/ui/ActionButton";
 import { Card } from "../components/ui/Card";
 import { StatusChip } from "../components/ui/StatusChip";
+import { agentPageData } from "../data/mockData";
 import type { EnvironmentStatus } from "../types";
 
 type PageProps = {
@@ -63,16 +64,24 @@ const trendInsights = [
   { label: "Watch item", value: "Missing order after payment", detail: "41% of open high-risk conversations", tone: "warning" as const },
 ];
 
-function statusBorderColor(status: string): string {
-  if (status === "At Risk" || status === "Failed") return "border-l-danger";
-  if (status === "Attention") return "border-l-warning";
-  return "border-l-success";
+function taskBorderColor(status: string): string {
+  if (status === "Failed")    return "border-l-danger";
+  if (status === "Escalated") return "border-l-warning";
+  return "border-l-transparent";
 }
 
-function statusRowBg(status: string): string {
-  if (status === "At Risk" || status === "Failed") return "bg-danger/5";
-  if (status === "Attention") return "bg-warning/5";
+function taskRowBg(status: string): string {
+  if (status === "Failed")    return "bg-danger/5";
+  if (status === "Escalated") return "bg-warning/5";
   return "";
+}
+
+function TaskStatusBadge({ status }: { status: string }) {
+  if (status === "Failed")
+    return <span className="rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-[10px] font-bold tracking-wide text-danger">FAILED</span>;
+  if (status === "Escalated")
+    return <span className="rounded-full border border-warning/30 bg-warning/5 px-2 py-0.5 text-[10px] font-bold tracking-wide text-warning">ESCALATED</span>;
+  return null;
 }
 
 function metricToneColor(tone?: "warning" | "danger"): string {
@@ -295,9 +304,24 @@ const CHART_VIEWBOX_H = 120;
 
 function SimpleTrendChart() {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [svgPxHeight, setSvgPxHeight] = useState(128);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [animateLine, setAnimateLine] = useState(false);
   const [activePoint, setActivePoint] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+
+  function scheduleHide() {
+    hideTimer.current = setTimeout(() => {
+      setActivePoint(null);
+      setTooltipPos(null);
+    }, 80);
+  }
+
+  function cancelHide() {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  }
 
   const maxValue = Math.max(...trendBars.map((b) => b.value));
   const minValue = Math.min(...trendBars.map((b) => b.value));
@@ -313,12 +337,6 @@ function SimpleTrendChart() {
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
   const thresholdY = ((chartMax - threshold) / (chartMax - chartMin)) * CHART_VIEWBOX_H;
 
-  const activePointData = activePoint !== null ? points[activePoint] : null;
-  const activeLeftPercent = activePoint !== null ? ((activePoint + 0.5) / trendBars.length) * 100 : 0;
-  // Map SVG coordinate to actual rendered pixel height for tooltip placement
-  const activeTopPx = activePointData
-    ? (activePointData.y / CHART_VIEWBOX_H) * svgPxHeight - 14
-    : 0;
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -327,97 +345,103 @@ function SimpleTrendChart() {
     return () => window.cancelAnimationFrame(rafId);
   }, []);
 
-  // Track actual SVG rendered height so tooltip stays anchored correctly
-  useEffect(() => {
-    if (!svgRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      setSvgPxHeight(entries[0]?.contentRect.height ?? 128);
-    });
-    obs.observe(svgRef.current);
-    return () => obs.disconnect();
-  }, []);
 
-  return (
-    <div
-      className="relative overflow-visible rounded-md border border-line bg-stone-50 px-3 py-3"
-      onMouseLeave={() => setActivePoint(null)}
-    >
-      <div className="relative">
-        {/* SVG height is auto-sized by aspect-ratio wrapper in parent */}
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${CHART_VIEWBOX_W} ${CHART_VIEWBOX_H}`}
-          preserveAspectRatio="none"
-          className="h-full w-full"
-          style={{ display: "block" }}
-        >
-          <line x1={0} y1={thresholdY} x2={CHART_VIEWBOX_W} y2={thresholdY} stroke="#d6d3d1" strokeDasharray="4 4" strokeWidth="1" />
-          <polyline
-            points={polylinePoints}
-            fill="none"
-            stroke="#8b5cf6"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            pathLength={1}
-            style={{
-              opacity: animateLine ? 1 : 0.3,
-              strokeDasharray: 1,
-              strokeDashoffset: animateLine ? 0 : 1,
-              transition: "stroke-dashoffset 900ms ease-out, opacity 400ms ease-out",
-            }}
-          />
-          {points.map((point, idx) => (
-            <g key={point.label}>
-              <circle
-                cx={point.x} cy={point.y}
-                r={activePoint === idx ? 4.5 : 3.5}
-                fill={activePoint === idx ? "#6d28d9" : "#8b5cf6"}
-                className="cursor-pointer transition-all"
-                style={{ opacity: animateLine ? 1 : 0, transitionDelay: `${120 + idx * 40}ms` }}
-                onMouseEnter={() => setActivePoint(idx)}
-                onClick={() => setActivePoint(idx)}
-              />
-            </g>
-          ))}
-        </svg>
-
-        <div className="mt-1 grid grid-cols-7 text-center">
-          {trendBars.map((bar, idx) => (
-            <button
-              key={bar.label}
-              onMouseEnter={() => setActivePoint(idx)}
-              onClick={() => setActivePoint(idx)}
-              className={`text-[11px] transition ${activePoint === idx ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
-            >
-              {bar.label}
-            </button>
-          ))}
-        </div>
-
-        {activePoint !== null && (
+  const activeIdx = activePoint;
+  const activePos = tooltipPos;
+  const tooltip =
+    activeIdx !== null && activePos !== null
+      ? createPortal(
           <div
-            className="pointer-events-none absolute z-10 w-44 -translate-x-1/2 -translate-y-full rounded-md border border-white/80 bg-white/95 p-2 text-xs shadow-md backdrop-blur-md"
-            style={{ top: `${activeTopPx}px`, left: `${activeLeftPercent}%` }}
+            className="fixed z-[9999] w-44 -translate-x-1/2 -translate-y-full rounded-md border border-white/80 bg-white/95 p-2 text-xs shadow-md backdrop-blur-md"
+            style={{ left: activePos.x, top: activePos.y - 8 }}
+            onMouseEnter={cancelHide}
+            onMouseLeave={scheduleHide}
           >
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-stone-900">{trendBars[activePoint].label}</span>
-              <span className="font-semibold text-accent">{trendBars[activePoint].value}%</span>
+              <span className="font-semibold text-stone-900">{trendBars[activeIdx].label}</span>
+              <span className="font-semibold text-accent">{trendBars[activeIdx].value}%</span>
             </div>
             <div className="mt-1 space-y-0.5 text-stone-700">
-              <div>{trendDetails[activePoint].delta}</div>
-              <div>Escalation {trendDetails[activePoint].escalation}</div>
+              <div>{trendDetails[activeIdx].delta}</div>
+              <div>Escalation {trendDetails[activeIdx].escalation}</div>
             </div>
             <div className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-white/80 bg-white/80 backdrop-blur-md" aria-hidden />
+          </div>,
+          document.body
+        )
+      : null;
+
+  return (
+    <>
+      <div
+        className="relative overflow-visible rounded-md border border-line bg-stone-50 px-3 py-3"
+        onMouseLeave={scheduleHide}
+      >
+        <div className="relative">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${CHART_VIEWBOX_W} ${CHART_VIEWBOX_H}`}
+            preserveAspectRatio="none"
+            className="h-full w-full"
+            style={{ display: "block" }}
+          >
+            <line x1={0} y1={thresholdY} x2={CHART_VIEWBOX_W} y2={thresholdY} stroke="#d6d3d1" strokeDasharray="4 4" strokeWidth="1" />
+            <polyline
+              points={polylinePoints}
+              fill="none"
+              stroke="#8b5cf6"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              pathLength={1}
+              style={{
+                opacity: animateLine ? 1 : 0.3,
+                strokeDasharray: 1,
+                strokeDashoffset: animateLine ? 0 : 1,
+                transition: "stroke-dashoffset 900ms ease-out, opacity 400ms ease-out",
+              }}
+            />
+            {points.map((point, i) => (
+              <g key={point.label}>
+                <circle
+                  cx={point.x} cy={point.y}
+                  r={activeIdx === i ? 4.5 : 3.5}
+                  fill={activeIdx === i ? "#6d28d9" : "#8b5cf6"}
+                  className="cursor-pointer transition-all"
+                  style={{ opacity: animateLine ? 1 : 0, transitionDelay: `${120 + i * 40}ms` }}
+                  onMouseEnter={() => {
+                    setActivePoint(i);
+                    if (svgRef.current) {
+                      const rect = svgRef.current.getBoundingClientRect();
+                      setTooltipPos({
+                        x: rect.left + (point.x / CHART_VIEWBOX_W) * rect.width,
+                        y: rect.top  + (point.y / CHART_VIEWBOX_H) * rect.height,
+                      });
+                    }
+                  }}
+                />
+              </g>
+            ))}
+          </svg>
+
+          <div className="mt-1 grid grid-cols-7 text-center">
+            {trendBars.map((bar) => (
+              <span key={bar.label} className="text-[11px] text-muted">
+                {bar.label}
+              </span>
+            ))}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+      {tooltip}
+    </>
   );
 }
 
 export function Evaluate({ app }: PageProps) {
   const content = contentForAgent(app.role, app.agent?.id);
+  const pageData = agentPageData[app.agent?.id ?? ""] ?? agentPageData["refund-review"];
+  const issueRows = pageData.tasks.filter((t) => t.status === "Failed" || t.status === "Escalated");
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -450,7 +474,7 @@ export function Evaluate({ app }: PageProps) {
         <div className="grid min-h-0 flex-1 grid-cols-2 overflow-hidden">
 
           {/* ── Left: KPIs + Top Issues ───────────────────────────────── */}
-          <div className="flex flex-col gap-4 overflow-hidden border-r border-line p-4">
+          <div className="flex flex-col gap-4 overflow-hidden border-r border-line px-4 py-6">
 
             {/* 2×2 KPI grid — uniform bg, taller cells, trend icons */}
             <div className="shrink-0 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
@@ -471,32 +495,34 @@ export function Evaluate({ app }: PageProps) {
               ))}
             </div>
 
-            {/* Top Issues — fixed height, 3-col layout, internal scroll */}
-            <div className="flex flex-col">
-              <div className="mb-2 shrink-0 text-xs font-semibold text-ink">{content.tableTitle}</div>
-              <div className="flex h-60 flex-col overflow-hidden rounded-lg border border-line">
-                {/* Header row — explicit % widths match body rows */}
+            {/* Top Issues — fills remaining height */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="mb-2 shrink-0 text-[13px] font-bold uppercase tracking-wide text-ink">{content.tableTitle}</div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line">
+                {/* Header row */}
                 <div className="flex shrink-0 border-b border-line bg-stone-50">
-                  <div className="w-[52%] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Issue</div>
-                  <div className="w-[28%] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Volume</div>
+                  <div className="w-[55%] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Issue</div>
+                  <div className="w-[25%] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Status</div>
                   <div className="w-[20%] px-3 py-2" />
                 </div>
                 {/* Body rows */}
                 <div className="compact-scrollbar flex-1 divide-y divide-line overflow-y-auto bg-panel">
-                  {content.rows.map((row) => (
+                  {issueRows.map((row) => (
                     <div
                       key={row.id}
-                      className={`flex items-center border-l-2 transition hover:brightness-[0.97] ${statusBorderColor(row.status)} ${statusRowBg(row.status)}`}
+                      className={`flex items-center border-l-2 transition hover:brightness-[0.97] ${taskBorderColor(row.status)} ${taskRowBg(row.status)}`}
                     >
-                      <div className="w-[52%] min-w-0 px-3 py-2.5">
-                        <div className="truncate text-xs font-medium text-ink">{row.primary}</div>
-                        <div className="mt-0.5 text-[10px] text-muted">{row.secondary}</div>
+                      <div className="w-[55%] min-w-0 px-3 py-2.5">
+                        <div className="truncate text-xs font-medium text-ink">{row.task}</div>
+                        <div className="mt-0.5 text-[10px] text-muted">{row.envTag} · {row.time}</div>
                       </div>
-                      <div className="w-[28%] shrink-0 px-3 py-2.5 tabular-nums text-[11px] text-muted">{row.metric}</div>
+                      <div className="w-[25%] shrink-0 px-3 py-2.5">
+                        <TaskStatusBadge status={row.status} />
+                      </div>
                       <div className="w-[20%] shrink-0 px-3 py-2.5">
-                        <ActionButton variant="quiet" className="h-6 w-full px-2 text-[11px]">
-                          {row.action}
-                        </ActionButton>
+                        <button className="rounded border border-line bg-white px-2 py-0.5 text-[11px] font-medium text-muted transition hover:bg-stone-50 hover:text-ink">
+                          View
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -511,7 +537,7 @@ export function Evaluate({ app }: PageProps) {
             {/* Chart header */}
             <div className="flex shrink-0 items-start justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-ink">{content.overviewTitle}</h2>
+                <h2 className="text-[13px] font-bold uppercase tracking-wide text-ink">{content.overviewTitle}</h2>
                 <p className="text-xs text-muted">Production trend · last 7 days</p>
               </div>
               <StatusChip status={app.role === "Org Admin" ? "Attention" : "At Risk"} />
@@ -539,7 +565,7 @@ export function Evaluate({ app }: PageProps) {
 
             {/* Key Signals — fixed height, internal scroll */}
             <div className="shrink-0">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Key Signals</div>
+              <div className="mb-2 text-[13px] font-bold uppercase tracking-wide text-ink">Key Signals</div>
               <div className="compact-scrollbar flex h-44 flex-col gap-2 overflow-y-auto">
                 {trendInsights.map((item) => (
                   <div

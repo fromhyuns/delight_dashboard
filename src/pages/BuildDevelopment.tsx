@@ -556,7 +556,6 @@ export function BuildDevelopment({ app }: PageProps) {
     ? buildConfig.mock.agentResponseWithTool
     : buildConfig.mock.agentResponseWithoutTool;
 
-  const promoteDisabled = app.role === "Agent Builder / Operator";
   const cardHeight = isProd ? "calc(100vh - 13rem)" : "calc(100vh - 11rem)";
 
   return (
@@ -904,15 +903,12 @@ export function BuildDevelopment({ app }: PageProps) {
               {!isProd && (
                 <div className="shrink-0 border-t border-line bg-white p-4">
                   <button
-                    disabled={!allReady || promoteDisabled}
+                    disabled={!allReady}
                     className="flex w-full items-center justify-center gap-2 rounded-md bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-900 disabled:cursor-not-allowed disabled:opacity-35"
                   >
                     {isStaging ? "Promote to Production" : "Send to Test"}
                     <ChevronRight size={14} className="shrink-0" />
                   </button>
-                  {promoteDisabled && (
-                    <p className="mt-2 text-center text-[10px] text-muted">Workspace Admin permission required</p>
-                  )}
                 </div>
               )}
             </div>
@@ -932,7 +928,7 @@ export function BuildDevelopment({ app }: PageProps) {
 
                   {/* User message */}
                   <div className="flex justify-end">
-                    <div className="max-w-[82%] rounded-2xl rounded-tr-sm bg-stone-800 px-3.5 py-2.5 text-xs leading-5 text-white">
+                    <div className="max-w-[82%] rounded-2xl rounded-tr-sm bg-stone-900/[0.12] px-3.5 py-2.5 text-xs leading-5 text-stone-800">
                       {buildConfig.mock.userMessage}
                     </div>
                   </div>
@@ -955,7 +951,7 @@ export function BuildDevelopment({ app }: PageProps) {
 
                   {/* Agent response */}
                   <div className="flex items-start gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-stone-600">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-stone-900/20">
                       <Bot size={13} className="text-white" />
                     </div>
                     <div className="max-w-[82%] rounded-2xl rounded-tl-sm border border-line bg-white px-3.5 py-2.5 text-xs leading-5 text-ink">

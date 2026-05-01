@@ -1,4 +1,5 @@
 import { Bell, Check, ChevronRight, Search, TriangleAlert, X } from "lucide-react";
+import naverLogo from "../../assets/naver_logo.png";
 
 function TriangleDown({ open }: { open: boolean }) {
   return (
@@ -221,9 +222,10 @@ export function TopBar({ state }: TopBarProps) {
     label: ws.name,
   }));
 
-  const agentItems: DropdownItem[] = agents
-    .filter((a) => a.workspaceId === state.workspace.id)
-    .map((a) => ({ id: a.id, label: a.name }));
+  const wsMap = Object.fromEntries(workspaces.map((w) => [w.id, w.name]));
+  const isAgentPage = location.pathname === "/agent";
+  const agentItems: DropdownItem[] = (isAgentPage ? agents : agents.filter((a) => a.workspaceId === state.workspace.id))
+    .map((a) => ({ id: a.id, label: a.name, sub: isAgentPage ? `#${wsMap[a.workspaceId]?.toUpperCase()}` : undefined }));
 
   return (
     <>
@@ -231,9 +233,7 @@ export function TopBar({ state }: TopBarProps) {
 
         {/* Left: logo + breadcrumb */}
         <div className="flex items-center gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sidebar text-xs font-bold text-white">
-            D
-          </div>
+          <img src={naverLogo} alt="NAVER" className="h-9 w-9 shrink-0 rounded-md object-cover" />
 
           {showWorkspace && (
             <>
@@ -281,6 +281,8 @@ export function TopBar({ state }: TopBarProps) {
                         if (lockedEnv) return;
                         if (isBuildPage && env === "Production" && state.environment !== "Production") {
                           setPendingEnv(env);
+                        } else if (isBuildPage && env === "Staging" && state.environment === "Development") {
+                          setPendingEnv(env);
                         } else {
                           state.setEnvironment(env);
                         }
@@ -326,17 +328,21 @@ export function TopBar({ state }: TopBarProps) {
       )}
 
       {pendingEnv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${pendingEnv === "Production" ? "bg-black/25 backdrop-blur-[2px]" : "bg-black/10"}`}>
           <div className="w-[400px] overflow-hidden rounded-xl border border-line bg-white shadow-xl">
             <div className="flex items-start justify-between px-5 pt-5 pb-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
-                  <TriangleAlert size={15} className="text-red-500" />
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${pendingEnv === "Production" ? "bg-red-50" : "bg-amber-50"}`}>
+                  <TriangleAlert size={15} className={pendingEnv === "Production" ? "text-red-500" : "text-amber-500"} />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-ink">Switch to Production?</div>
+                  <div className="text-sm font-semibold text-ink">
+                    {pendingEnv === "Production" ? "Production으로 전환할까요?" : "Staging으로 전환할까요?"}
+                  </div>
                   <p className="mt-1 text-xs leading-5 text-muted">
-                    Production changes apply immediately to live users. Editing is locked by default and requires explicit unlock.
+                    {pendingEnv === "Production"
+                      ? "Production 변경사항은 실제 사용자에게 즉시 반영됩니다. 기본적으로 편집이 잠겨 있으며, 명시적으로 잠금을 해제해야 합니다."
+                      : "Development에서 작업 중인 내용이 있을 수 있습니다. Staging으로 전환하면 현재 입력이 초기화됩니다."}
                   </p>
                 </div>
               </div>
@@ -352,13 +358,13 @@ export function TopBar({ state }: TopBarProps) {
                 onClick={() => setPendingEnv(null)}
                 className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-stone-50"
               >
-                Cancel
+                취소
               </button>
               <button
                 onClick={() => { state.setEnvironment(pendingEnv); setPendingEnv(null); }}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+                className={`rounded-md px-4 py-2 text-sm font-medium text-white transition ${pendingEnv === "Production" ? "bg-red-600 hover:bg-red-700" : "bg-stone-800 hover:bg-stone-900"}`}
               >
-                Switch to Production
+                {pendingEnv === "Production" ? "Production으로 전환" : "Staging으로 전환"}
               </button>
             </div>
           </div>

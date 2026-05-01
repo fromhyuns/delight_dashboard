@@ -23,7 +23,7 @@ const bottomItems: RailItem[] = [
   { id: "settings", icon: <Settings size={18} />, label: "Settings", to: "/", activePaths: [] },
 ];
 
-export function LeftRail({ state }: { state: AppState }) {
+export function LeftRail({ state, onExpandContext }: { state: AppState; onExpandContext: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,9 +35,11 @@ export function LeftRail({ state }: { state: AppState }) {
   function handleClick(item: RailItem) {
     if (item.id === "workspace" && workspaces.length > 0) {
       state.setWorkspaceId(workspaces[0].id);
+      onExpandContext();
     } else if (item.id === "agent" && agents.length > 0) {
       state.setWorkspaceId(agents[0].workspaceId);
       state.setAgentId(agents[0].id);
+      onExpandContext();
     }
     navigate(item.to);
   }
